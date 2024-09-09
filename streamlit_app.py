@@ -48,11 +48,11 @@ def import_stock_data(isin):
         return None
     return yf_instance
 
-def return_calculation(stock_data, today=today_pd_format, first_date='2024-01-01'):
-    idx_first_day = stock_data.index.searchsorted(first_date)
-    open = stock_data['Open'].iloc[idx_first_day]
-    close = stock_data['Close'].asof(today)
-    return (close - open) / close
+# def return_calculation(stock_data, today=today_pd_format, first_date='2024-01-01'):
+#     idx_first_day = stock_data.index.searchsorted(first_date)
+#     open = stock_data['Open'].iloc[idx_first_day]
+#     close = stock_data['Close'].asof(today)
+#     return (close - open) / close
 
 @st.cache_resource
 def shap_object_reconstruction(shap_values_dict):
@@ -126,11 +126,11 @@ if page == pages[4]:
     if cours is None:
         st.error(f'Erreur : Le cours de l\'action {action} n\'a pas pu être téléchargé sur Yahoo Finance')
     else:
-        return_2024 = return_calculation(cours)
+        # return_2024 = return_calculation(cours)
 
-        st.write(f'{pd.Series(cours.index).dt.date.iloc[-1]}')
-        st.write(f'Le cours de l\'action {action} a varié de {round(return_2024 * 100, 2)}% \
-                 depuis le 1er janvier 2024')
+        # st.write(f'{pd.Series(cours.index).dt.date.iloc[-1]}')
+        # st.write(f'Le cours de l\'action {action} a varié de {round(return_2024 * 100, 2)}% \
+        #          depuis le 1er janvier 2024')
         
         fig = px.line(
             cours.reset_index(), x='Date', y=['Open', 'Close'],
