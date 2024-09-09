@@ -197,11 +197,11 @@ if page == pages[4]:
 
     st.subheader('Interprétabilité SHAP de la prédiction')
 
-    row_number = data_2024.index.get_loc(isin)
-    st.markdown('**Force Plot :**')
-    st_shap(shap.plots.force(explainer[..., 1][row_number]), height=150, width=1000)
-    st.markdown('**Waterfall :**')
-    st_shap(shap.plots.waterfall(explainer[..., 1][row_number]), height=500, width=1000)
+    # row_number = data_2024.index.get_loc(isin)
+    # st.markdown('**Force Plot :**')
+    # st_shap(shap.plots.force(explainer[..., 1][row_number]), height=150, width=1000)
+    # st.markdown('**Waterfall :**')
+    # st_shap(shap.plots.waterfall(explainer[..., 1][row_number]), height=500, width=1000)
 
     st.write('\n\n\n\n')
     st.markdown(
