@@ -1,0 +1,8 @@
+streamlit==1.38.0
+pandas==2.2.2
+numpy==1.26.4
+joblib==1.4.2
+yfinance==0.2.43
+plotly.express==0.4.1
+shap==0.45.1
+streamlit_shap==1.0.2
