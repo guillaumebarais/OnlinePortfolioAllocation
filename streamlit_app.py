@@ -42,7 +42,7 @@ def prediction(modele, isin):
 @st.cache_data
 def import_stock_data(isin):
     try:
-        yf_instance = yf.download('FR0000131906123', start='2023-01-01', end='2024-09-07')
+        yf_instance = yf.download('FR0000131906', start='2023-01-01', end='2024-09-07')
     except Exception as e:
         print(f"Erreur lors du téléchargement des données : {e}")
         return None
