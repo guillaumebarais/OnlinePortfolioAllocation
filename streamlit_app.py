@@ -13,6 +13,7 @@ from streamlit_shap import st_shap
 rfc_file = '20240909_Classifier_RFC.joblib'
 rfr_file = '20240909_Regressor_RFR.joblib'
 data_2024_file = 'preprocessed_data_2024.csv'
+stock_info_file = '20240423_PEA_stocks_info.csv'
 dico_name_isin_file = 'dictionnaire_nom_isin.json'
 dico_isin_name_file = 'dictionnaire_isin_nom.json'
 dico_isin_ticker_file = 'dictionnaire_isin_ticker.json'
@@ -23,9 +24,9 @@ today_pd_format = pd.Timestamp.today().normalize()
 
 # Fonctions
 @st.cache_data
-def read_df():
-     data_2024 = pd.read_csv(data_2024_file, index_col='isin')
-     return data_2024
+def read_df(file):
+     df = pd.read_csv(file, index_col='isin')
+     return df
 
 @st.cache_data
 def load_model(model_file):
@@ -67,7 +68,9 @@ def shap_object_reconstruction(shap_values_dict):
     return shap_values
 
 # Initialisation Python
-data_2024 = read_df()
+data_2024 = read_df(data_2024_file)
+
+stock_info = read_df(stock_info_file)
 
 rfc = load_model(rfc_file)
 rfr = load_model(rfr_file)
@@ -86,6 +89,20 @@ with open(explainer_shap_RFC_file, 'r') as f:
 
 with open(explainer_shap_RFR_file, 'r') as f:
     shap_values_RFR_dict = json.load(f)
+
+features = [
+    'shortName',
+    'longName',
+    'symbol',
+    'country',
+    'industry',
+    'sector',
+    'longBusinessSummary',
+    'fullTimeEmployees',
+    'marketCap',
+    'currency',
+    'exchange'
+    ]
 
 # Streamlit
 st.title("Online Portfolio Allocation")
@@ -126,9 +143,11 @@ if page == pages[4]:
     action = st.selectbox('Choix de l\'action :', actions, key ='stock_choice')
     st.write(f'L\'action choisi est {action}.')
 
+    isin = dico_name_isin[action]['isin']
+    st.dataframe(stock_info.loc[isin, features])
+
     st.subheader(f'Variation du cours de l\'action {action} en 2024')
 
-    isin = dico_name_isin[action]['isin']
     ticker = dico_isin_ticker[isin]
     cours = import_stock_data(ticker)
     if cours is None:
