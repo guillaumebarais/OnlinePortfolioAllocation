@@ -207,7 +207,7 @@ if page == pages[4]:
     # st.markdown('**Waterfall :**')
     # st_shap(shap.plots.waterfall(explainer[..., 1][row_number]), height=500, width=1000)
 
-    st.write('\n\n\n\n')
+    st.write('\n\n\n')
     st.markdown(
         """
         Les variables sont :
