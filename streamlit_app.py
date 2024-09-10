@@ -39,9 +39,6 @@ def selection_model(selected_model):
             model = rfr
         return model
 
-def prediction(modele, isin):
-     return modele.predict(data_2024[isin])
-
 @st.cache_data
 def import_stock_data(ticker):
     try:
@@ -178,8 +175,8 @@ if page == pages[4]:
     if option == 'Random Forest Classifier':
         explainer = shap_object_reconstruction(shap_values_RFC_dict)
         pred = modele.predict(data_2024[data_2024.index == isin])[0]
-        prob = modele.predict_proba(data_2024[data_2024.index == isin])[0,1]        
-
+        prob = modele.predict_proba(data_2024[data_2024.index == isin])[0,1]
+      
         def generate_display_text(action, pred):
             """
             Génère le texte à afficher en fonction de la prédiction.
@@ -245,9 +242,9 @@ if page == pages[4]:
         """
         Les variables sont :
         - **Return_n** : Variation du cours boursier en 2023.
-        - **country** : Pays d'origine.
+        - **country** : Pays.
         - **new_industry** : Classification construite d'après le secteur d'activité et l'activité de la société.
-        - **exchange** : Lieu de cotation de la société.
+        - **exchange** : Place de cotation de la société.
         - **fte_category** : TPE, PME, ETI, GE. 
         - **cap_category** : Micro-Cap, Small-Cap, Mid-Cap, Large-Cap
         - **businessClass** : Classification construite d'après la description de la société.
@@ -270,5 +267,44 @@ if page == pages[4]:
 # Stratégies OPA
 if page == pages[5]:
     st.header("Stratégies Online Portfolio Allocation")
+
+    choix = ['Random Forest Classifier', 'Random Forest Regressor']
+    option = st.selectbox('Choix du modèle :', choix, key ='model_choice')
+    st.write('Le modèle choisi est ', option)
+
+    modele = selection_model(option)
+
+    init_nb_action = 25
+
+    nb_action = st.slider(
+        'Nombre d\'actions retenus',
+        min_value=1,
+        max_value=len(data_2024),
+        value=init_nb_action
+        )
+    
+    if option == 'Random Forest Classifier':
+        probs = modele.predict_proba(data_2024)
+        
+        df_predicted = pd.concat(
+            [
+                data_2024,
+                pd.DataFrame(probs[:,1], index=data_2024.index, columns=['Probabilité'])
+                ],
+                axis=1
+                )
+        
+
+        df_predicted['Nom'] = df_predicted.index.map(dico_isin_name)
+        df_predicted['Ticker'] = df_predicted.index.map(dico_isin_ticker)
+    
+        portfolio = df_predicted.sort_values(by='Probabilité', ascending=False)[['Nom','Ticker','Probabilité']]
+        portfolio = portfolio.set_index('Nom')
+        st.dataframe(portfolio.head(nb_action))
+
+    elif option == 'Random Forest Regressor':
+        y_pred = modele.predict(data_2024)
+      
+    
 
 
