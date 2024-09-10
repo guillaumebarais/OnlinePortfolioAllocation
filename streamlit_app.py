@@ -17,6 +17,7 @@ dico_name_isin_file = 'dictionnaire_nom_isin.json'
 dico_isin_name_file = 'dictionnaire_isin_nom.json'
 dico_isin_ticker_file = 'dictionnaire_isin_ticker.json'
 explainer_shap_RFC_file = 'explainer_shap_RFC.json'
+explainer_shap_RFR_file = 'explainer_shap_RFR.json'
 today = date.today()
 today_pd_format = pd.Timestamp.today().normalize()
 
@@ -82,6 +83,9 @@ with open(dico_isin_ticker_file, 'r') as f:
 
 with open(explainer_shap_RFC_file, 'r') as f:
     shap_values_RFC_dict = json.load(f)
+
+with open(explainer_shap_RFR_file, 'r') as f:
+    shap_values_RFR_dict = json.load(f)
 
 # Streamlit
 st.title("Online Portfolio Allocation")
@@ -179,8 +183,17 @@ if page == pages[4]:
         st.write('La prédiction est réalisée sur la base des données de l\'année 2023.')
         st.markdown(to_display, unsafe_allow_html=True)
 
+        st.subheader('Interprétabilité SHAP de la prédiction')
+
+        row_number = data_2024.index.get_loc(isin)
+        st.markdown('**Force Plot :**')
+        st_shap(shap.plots.force(explainer[..., 1][row_number]), height=150, width=1000)
+        st.markdown('**Waterfall :**')
+        st_shap(shap.plots.waterfall(explainer[..., 1][row_number]), height=500, width=1000)
+
+
     elif option == 'Random Forest Regressor':
-        # explainer = shap_object_reconstruction(shap_values_RFR_dict)
+        explainer = shap_object_reconstruction(shap_values_RFR_dict)
         pred = modele.predict(data_2024[data_2024.index == isin])[0]
         
         def generate_display_text(action, pred):
@@ -199,13 +212,13 @@ if page == pages[4]:
         st.write('La prédiction est réalisée sur la base des données de l\'année 2023.')
         st.markdown(to_display, unsafe_allow_html=True)
 
-    st.subheader('Interprétabilité SHAP de la prédiction')
+        st.subheader('Interprétabilité SHAP de la prédiction')
 
-    # row_number = data_2024.index.get_loc(isin)
-    # st.markdown('**Force Plot :**')
-    # st_shap(shap.plots.force(explainer[..., 1][row_number]), height=150, width=1000)
-    # st.markdown('**Waterfall :**')
-    # st_shap(shap.plots.waterfall(explainer[..., 1][row_number]), height=500, width=1000)
+        row_number = data_2024.index.get_loc(isin)
+        st.markdown('**Force Plot :**')
+        st_shap(shap.plots.force(explainer[row_number]), height=150, width=1000)
+        st.markdown('**Waterfall :**')
+        st_shap(shap.plots.waterfall(explainer[row_number]), height=500, width=1000)
 
     st.write('\n\n\n')
     st.markdown(
