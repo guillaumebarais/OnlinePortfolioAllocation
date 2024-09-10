@@ -15,6 +15,7 @@ rfr_file = '20240909_Regressor_RFR.joblib'
 data_2024_file = 'preprocessed_data_2024.csv'
 dico_name_isin_file = 'dictionnaire_nom_isin.json'
 dico_isin_name_file = 'dictionnaire_isin_nom.json'
+dico_isin_ticker_file = 'dictionnaire_isin_ticker.json'
 explainer_shap_RFC_file = 'explainer_shap_RFC.json'
 today = date.today()
 today_pd_format = pd.Timestamp.today().normalize()
@@ -40,19 +41,19 @@ def prediction(modele, isin):
      return modele.predict(data_2024[isin])
 
 @st.cache_data
-def import_stock_data(isin):
+def import_stock_data(ticker):
     try:
-        yf_instance = yf.download('FR0000131906', start='2023-01-01', end='2024-09-07')
+        yf_instance = yf.download(ticker, start='2023-01-01', end='2024-09-07')
     except Exception as e:
         print(f"Erreur lors du téléchargement des données : {e}")
         return None
     return yf_instance
 
-# def return_calculation(stock_data, today=today_pd_format, first_date='2024-01-01'):
-#     idx_first_day = stock_data.index.searchsorted(first_date)
-#     open = stock_data['Open'].iloc[idx_first_day]
-#     close = stock_data['Close'].asof(today)
-#     return (close - open) / close
+def return_calculation(stock_data, today=today_pd_format, first_date='2024-01-01'):
+    idx_first_day = stock_data.index.searchsorted(first_date)
+    open = stock_data['Open'].iloc[idx_first_day]
+    close = stock_data['Close'].asof(today)
+    return (close - open) / close
 
 @st.cache_resource
 def shap_object_reconstruction(shap_values_dict):
@@ -75,6 +76,9 @@ with open(dico_name_isin_file, 'r') as f:
 
 with open(dico_isin_name_file, 'r') as f:
     dico_isin_name = json.load(f)
+
+with open(dico_isin_ticker_file, 'r') as f:
+    dico_isin_ticker = json.load(f)
 
 with open(explainer_shap_RFC_file, 'r') as f:
     shap_values_RFC_dict = json.load(f)
@@ -113,7 +117,6 @@ if page == pages[3]:
 if page == pages[4]:
     st.header("Prédiction de la variation du cours d'une action")
 
-    # actions = [dico_isin_name[isin] for isin in data_2024.index.values]
     actions = [dico_isin_name[isin] for isin in data_2024.index.values]
 
     action = st.selectbox('Choix de l\'action :', actions, key ='stock_choice')
@@ -122,15 +125,17 @@ if page == pages[4]:
     st.subheader(f'Variation du cours de l\'action {action} en 2024')
 
     isin = dico_name_isin[action]['isin']
-    cours = import_stock_data(isin)
+    ticker = dico_isin_ticker[isin]
+    st.write(ticker)
+    cours = import_stock_data(ticker)
     if cours is None:
         st.error(f'Erreur : Le cours de l\'action {action} n\'a pas pu être téléchargé sur Yahoo Finance')
     else:
-        # return_2024 = return_calculation(cours)
+        return_2024 = return_calculation(cours)
 
-        # st.write(f'{pd.Series(cours.index).dt.date.iloc[-1]}')
-        # st.write(f'Le cours de l\'action {action} a varié de {round(return_2024 * 100, 2)}% \
-        #          depuis le 1er janvier 2024')
+        st.write(f'{pd.Series(cours.index).dt.date.iloc[-1]}')
+        st.write(f'Le cours de l\'action {action} a varié de {round(return_2024 * 100, 2)}% \
+                 depuis le 1er janvier 2024')
         
         fig = px.line(
             cours.reset_index(), x='Date', y=['Open', 'Close'],
