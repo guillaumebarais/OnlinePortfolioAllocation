@@ -97,7 +97,6 @@ features = [
     'country',
     'industry',
     'sector',
-    'longBusinessSummary',
     'fullTimeEmployees',
     'marketCap',
     'currency',
@@ -144,7 +143,9 @@ if page == pages[4]:
     st.write(f'L\'action choisi est {action}.')
 
     isin = dico_name_isin[action]['isin']
+    
     st.dataframe(stock_info.loc[isin, features])
+    st.write(stock_info.loc[isin, 'longBusinessSummary'])
 
     st.subheader(f'Variation du cours de l\'action {action} en 2024')
 
