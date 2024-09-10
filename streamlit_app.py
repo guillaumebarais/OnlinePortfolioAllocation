@@ -23,12 +23,12 @@ today = date.today()
 today_pd_format = pd.Timestamp.today().normalize()
 
 # Fonctions
-@st.cache_data
+@st.cache_resource
 def read_df(file):
      df = pd.read_csv(file, index_col='isin')
      return df
 
-@st.cache_data
+@st.cache_resource
 def load_model(model_file):
     return joblib.load(model_file)
 
@@ -39,7 +39,7 @@ def selection_model(selected_model):
             model = rfr
         return model
 
-@st.cache_data
+@st.cache_resource
 def import_stock_data(ticker):
     try:
         yf_instance = yf.download(ticker, start='2023-01-01', end='2024-09-07')
@@ -64,6 +64,14 @@ def shap_object_reconstruction(shap_values_dict):
         )
     return shap_values
 
+@st.cache_resource
+def gain_calculation(tickers):
+    gain = []
+    for ticker in tickers:
+        data = import_stock_data(ticker)
+        gain.append(return_calculation(data))
+    return gain
+    
 # Initialisation Python
 data_2024 = read_df(data_2024_file)
 
@@ -154,8 +162,9 @@ if page == pages[4]:
         return_2024 = return_calculation(cours)
 
         st.write(f'{pd.Series(cours.index).dt.date.iloc[-1]} : {ticker}')
-        st.write(f'Le cours de l\'action {action} a varié de {round(return_2024 * 100, 2)}% \
-                 depuis le 1er janvier 2024')
+        st.markdown(f'Le cours de l\'action {action} a varié de <span style="color:blue; font-weight:bold;">{round(return_2024 * 100, 2)}%</span> \
+             depuis le 1er janvier 2024', unsafe_allow_html=True)
+
         
         fig = px.line(
             cours.reset_index(), x='Date', y=['Open', 'Close'],
@@ -279,7 +288,7 @@ if page == pages[5]:
     nb_action = st.slider(
         'Nombre d\'actions retenus',
         min_value=1,
-        max_value=len(data_2024),
+        max_value=100,
         value=init_nb_action
         )
     
@@ -298,13 +307,15 @@ if page == pages[5]:
         df_predicted['Nom'] = df_predicted.index.map(dico_isin_name)
         df_predicted['Ticker'] = df_predicted.index.map(dico_isin_ticker)
     
-        portfolio = df_predicted.sort_values(by='Probabilité', ascending=False)[['Nom','Ticker','Probabilité']]
+        portfolio = df_predicted.sort_values(by='Probabilité', ascending=False)
         portfolio = portfolio.set_index('Nom')
-        st.dataframe(portfolio.head(nb_action))
+        portfolio = portfolio.head(nb_action)
+        st.dataframe(portfolio[['Ticker','Probabilité']].head(nb_action))
 
     elif option == 'Random Forest Regressor':
         y_pred = modele.predict(data_2024)
-      
-    
 
+    gain = gain_calculation(portfolio['Ticker'].to_list())  
+    
+    st.write(gain)
 
