@@ -67,10 +67,19 @@ def shap_object_reconstruction(shap_values_dict):
 @st.cache_resource
 def gain_calculation(tickers):
     gain = []
+    warning = []
+
     for ticker in tickers:
-        data = import_stock_data(ticker)
-        gain.append(return_calculation(data))
-    return gain
+        try:
+            data = import_stock_data(ticker)
+            if data is None:
+                warning.append(ticker)
+                continue
+            gain.append(return_calculation(data))
+        except Exception as e:
+            st.warning(f"Warning : no data for {ticker} ({e})")
+            warning.append(ticker)
+    return gain, warning
     
 # Initialisation Python
 data_2024 = read_df(data_2024_file)
@@ -315,7 +324,7 @@ if page == pages[5]:
     elif option == 'Random Forest Regressor':
         y_pred = modele.predict(data_2024)
 
-    gain = gain_calculation(portfolio['Ticker'].to_list())  
+    gain, warning = gain_calculation(portfolio['Ticker'].to_list())  
     
     st.write(gain)
 
