@@ -126,14 +126,13 @@ if page == pages[4]:
 
     isin = dico_name_isin[action]['isin']
     ticker = dico_isin_ticker[isin]
-    st.write(ticker)
     cours = import_stock_data(ticker)
     if cours is None:
         st.error(f'Erreur : Le cours de l\'action {action} n\'a pas pu être téléchargé sur Yahoo Finance')
     else:
         return_2024 = return_calculation(cours)
 
-        st.write(f'{pd.Series(cours.index).dt.date.iloc[-1]}')
+        st.write(f'{pd.Series(cours.index).dt.date.iloc[-1]} : {ticker}')
         st.write(f'Le cours de l\'action {action} a varié de {round(return_2024 * 100, 2)}% \
                  depuis le 1er janvier 2024')
         
