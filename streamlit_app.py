@@ -22,15 +22,15 @@ explainer_shap_RFR_file = 'explainer_shap_RFR.json'
 today = date.today()
 today_pd_format = pd.Timestamp.today().normalize()
 indices_reference = {
-    "Euro Stoxx 50": "^STOXX50E",
-    "Euro Stoxx 600": "^STOXX",
-    "CAC 40 (France)": "^FCHI",
-    "DAX (Allemagne)": "^GDAXI",
-    "FTSE 100 (Royaume-Uni)": "^FTSE",
-    "IBEX 35 (Espagne)": "^IBEX",
-    "FTSE MIB (Italie)": "FTSEMIB.MI",
-    "AEX (Pays-Bas)": "^AEX",
-    "OMX Stockholm 30 (Suède)": "^OMX",
+    "^STOXX": "Euro Stoxx 600",
+    "^STOXX50E": "Euro Stoxx 50",
+    "^FCHI": "CAC 40 (France)",
+    "^GDAXI": "DAX (Allemagne)",
+    "^IBEX": "IBEX 35 (Espagne)",
+    "FTSEMIB.MI": "FTSE MIB (Italie)",
+    "^AEX": "AEX (Pays-Bas)",
+    "^SSMI": "SMI (Suisse)",
+    "^OMX": "OMX Stockholm 30 (Suède)",
 }
 
 # Fonctions
@@ -79,16 +79,18 @@ def shap_object_reconstruction(shap_values_dict):
 @st.cache_resource
 def gain_calculation(tickers):
     gain = []
+    tickers_downloaded = []
     warning = []
 
     for ticker in tickers:
         try:
             data = import_stock_data(ticker)
             gain.append(variation_calculation(data))
+            tickers_downloaded.append(ticker)
         except Exception as e:
             st.warning(f"Warning : no data for {ticker} ({e})")
             warning.append(ticker)
-    return gain
+    return gain, tickers_downloaded, warning
 
 def strategie_1(gains):
     """
@@ -96,6 +98,23 @@ def strategie_1(gains):
     """
     try:
         perf = sum(gains) / len(gains)
+    except Exception as e:
+        st.error(e)
+        return None
+    return perf
+
+def strategie_2(gains, tickers, portfolio):
+    """
+    Calcul de la performance pour un portefeuille pondéré par la probabilité
+    """
+    try:
+        weighted_gains = []
+        probs = []
+        for i, ticker in enumerate(tickers):
+            prob = portfolio.loc[portfolio['Ticker']==ticker, 'Probabilité'].values[0]
+            probs.append(prob)
+            weighted_gains.append(gains[i] * prob)
+        perf = sum(weighted_gains) / sum(probs)
     except Exception as e:
         st.error(e)
         return None
@@ -128,6 +147,7 @@ features = [
     'shortName',
     'longName',
     'symbol',
+    'website',
     'country',
     'industry',
     'sector',
@@ -345,37 +365,62 @@ if page == pages[5]:
     elif option_2 == 'Random Forest Regressor':
         y_pred = modele.predict(data_2024)  
     
-    gains = gain_calculation(portfolio['Ticker'].to_list())
+        df_predicted = pd.concat(
+            [
+                data_2024,
+                pd.DataFrame(y_pred, index=data_2024.index, columns=['Variation'])
+                ],
+                axis=1
+                )
+        
+        df_predicted['Nom'] = df_predicted.index.map(dico_isin_name)
+        df_predicted['Ticker'] = df_predicted.index.map(dico_isin_ticker)
     
-    references = gain_calculation([v for v in indices_reference.values()])
+        portfolio = df_predicted.sort_values(by='Variation', ascending=False)
+        portfolio = portfolio.set_index('Nom')
+        portfolio = portfolio.head(nb_action)
+        st.dataframe(portfolio[['Ticker','Variation']].head(nb_action))
 
-    strategies = ['Portefeuille équipondéré', 'Portefeuille pondéré par la probabilité']
+    gains, tickers, warnings = gain_calculation(portfolio['Ticker'].to_list())
+    
+    strategies = [
+        'Portefeuille équipondéré',
+        'Portefeuille pondéré par la probabilité (Classification) ou la variation (Régression)'
+        ]
     strategie = st.selectbox('Choix du modèle :', strategies, key ='strategie_choice')
     st.write(f'La stratégie choisie est {strategie}.')
 
-    if strategie == 'Portefeuille équipondéré':
-        performance = strategie_1(gains)
-
-        def generate_display_text_2(performance, nb_action):
-                """
-                Génère le texte à afficher en fonction de la performance
-                """
-                if performance >= 0:
-                    color = 'green'
-                else:
-                    color = 'red'
-
-                return f"Depuis le 1er janvier 2024, la performance avec un portefeuille équipondéré de {nb_action} actions est de \
-                    <span style='color:{color}; font-weight:bold;'>{round(performance * 100, 1)}%</span>"            
+    def generate_display_text_2(performance):
+        """
+        Génère le texte à afficher en fonction de la performance
+        """
+        if performance >= 0:
+            color = 'green'
+        else:
+            color = 'red'
+            
+        return f"<span style='color:{color}; font-weight:bold;'>{round(performance * 100, 2)}%</span>"            
                     
-        to_display = generate_display_text_2(performance, nb_action)
-        st.markdown(to_display, unsafe_allow_html=True)
-        st.text("")
-        st.text("")
+    if strategie == 'Portefeuille équipondéré':
+        performance_pe = strategie_1(gains)
+        perf_display_pe = generate_display_text_2(performance_pe)
+        st.markdown(f"Depuis le 1er janvier 2024, la performance avec un portefeuille équipondéré \
+                    de {nb_action} actions est de " + perf_display_pe +".", unsafe_allow_html=True)
 
+    elif strategie == 'Portefeuille pondéré par la probabilité (Classification) ou la variation (Régression)':
+        performance_pp = strategie_2(gains, tickers, portfolio)
+        perf_display_pp = generate_display_text_2(performance_pp)
+        st.markdown(f"Depuis le 1er janvier 2024, la performance avec un portefeuille de {nb_action} actions pondéré \
+                    est de " + perf_display_pp +".", unsafe_allow_html=True)
+
+    st.text("")
+    st.text("")
     st.markdown('__Indices de référence depuis le 1er janvier 2024 :__')
-    for i, (key, value) in enumerate(indices_reference.items()):
-        st.text(f"     {key} : {round(references[i] * 100,2)}%")
+    
+    references, ref_tickers, ref_warnings = gain_calculation([k for k in indices_reference.keys()])
+
+    for i, indice in enumerate(ref_tickers):
+        st.text(f"{indices_reference[indice]} : {round(references[i] * 100,2)}%")
 
 
     
