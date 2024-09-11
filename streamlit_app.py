@@ -105,7 +105,7 @@ def strategie_1(gains):
 
 def strategie_2(gains, tickers, portfolio):
     """
-    Calcul de la performance pour un portefeuille pondéré par la probabilité
+    Calcul de la performance pour un portefeuille pondéré par la probabilité (RFC)
     """
     try:
         weighted_gains = []
@@ -115,6 +115,23 @@ def strategie_2(gains, tickers, portfolio):
             probs.append(prob)
             weighted_gains.append(gains[i] * prob)
         perf = sum(weighted_gains) / sum(probs)
+    except Exception as e:
+        st.error(e)
+        return None
+    return perf
+
+def strategie_3(gains, tickers, portfolio):
+    """
+    Calcul de la performance pour un portefeuille pondéré par la variation de cours prédite (RFR)
+    """
+    try:
+        weighted_gains = []
+        variations = []
+        for i, ticker in enumerate(tickers):
+            variation = portfolio.loc[portfolio['Ticker']==ticker, 'Variation'].values[0]
+            variations.append(variation)
+            weighted_gains.append(gains[i] * variation)
+        perf = sum(weighted_gains) / sum(variation)
     except Exception as e:
         st.error(e)
         return None
@@ -402,14 +419,18 @@ if page == pages[5]:
         return f"<span style='color:{color}; font-weight:bold;'>{round(performance * 100, 2)}%</span>"            
                     
     if strategie == 'Portefeuille équipondéré':
-        performance_pe = strategie_1(gains)
+        performance_pe = strategie_1(gains, tickers)
         perf_display_pe = generate_display_text_2(performance_pe)
         st.markdown(f"Depuis le 1er janvier 2024, la performance avec un portefeuille équipondéré \
                     de {nb_action} actions est de " + perf_display_pe +".", unsafe_allow_html=True)
 
     elif strategie == 'Portefeuille pondéré par la probabilité (Classification) ou la variation (Régression)':
-        performance_pp = strategie_2(gains, tickers, portfolio)
-        perf_display_pp = generate_display_text_2(performance_pp)
+        if option_2 == 'Random Forest Classifier':
+            performance_pp = strategie_2(gains, tickers, portfolio)
+            perf_display_pp = generate_display_text_2(performance_pp)
+        elif option_2 == 'Random Forest Regressor':
+            performance_pp = strategie_3(gains, tickers, portfolio)
+            perf_display_pp = generate_display_text_2(performance_pp)
         st.markdown(f"Depuis le 1er janvier 2024, la performance avec un portefeuille de {nb_action} actions pondéré \
                     est de " + perf_display_pp +".", unsafe_allow_html=True)
 
