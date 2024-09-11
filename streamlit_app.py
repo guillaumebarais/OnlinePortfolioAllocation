@@ -99,7 +99,7 @@ def strategie_1(gains):
     try:
         perf = sum(gains) / len(gains)
     except Exception as e:
-        st.error(e)
+        st.error(f"Erreur : {e}")
         return None
     return perf
 
@@ -116,13 +116,13 @@ def strategie_2(gains, tickers, portfolio):
             weighted_gains.append(gains[i] * prob)
         perf = sum(weighted_gains) / sum(probs)
     except Exception as e:
-        st.error(e)
+        st.error(f"Erreur : {e}")
         return None
     return perf
 
 def strategie_3(gains, tickers, portfolio):
     """
-    Calcul de la performance pour un portefeuille pondéré par la variation de cours prédite (RFR)
+    Calcul de la performance vpour un portefeuille pondéré par la variation de cours prédite (RFR)
     """
     try:
         weighted_gains = []
@@ -131,9 +131,9 @@ def strategie_3(gains, tickers, portfolio):
             variation = portfolio.loc[portfolio['Ticker']==ticker, 'Variation'].values[0]
             variations.append(variation)
             weighted_gains.append(gains[i] * variation)
-        perf = sum(weighted_gains) / sum(variation)
+        perf = sum(weighted_gains) / sum(variations)
     except Exception as e:
-        st.error(e)
+        st.error(f"Erreur : {e}")
         return None
     return perf
     
@@ -419,7 +419,7 @@ if page == pages[5]:
         return f"<span style='color:{color}; font-weight:bold;'>{round(performance * 100, 2)}%</span>"            
                     
     if strategie == 'Portefeuille équipondéré':
-        performance_pe = strategie_1(gains, tickers)
+        performance_pe = strategie_1(gains)
         perf_display_pe = generate_display_text_2(performance_pe)
         st.markdown(f"Depuis le 1er janvier 2024, la performance avec un portefeuille équipondéré \
                     de {nb_action} actions est de " + perf_display_pe +".", unsafe_allow_html=True)
