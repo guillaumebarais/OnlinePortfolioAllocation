@@ -21,6 +21,17 @@ explainer_shap_RFC_file = 'explainer_shap_RFC.json'
 explainer_shap_RFR_file = 'explainer_shap_RFR.json'
 today = date.today()
 today_pd_format = pd.Timestamp.today().normalize()
+indices_reference = {
+    "Euro Stoxx 50": "^STOXX50E",
+    "Euro Stoxx 600": "^STOXX",
+    "CAC 40 (France)": "^FCHI",
+    "DAX (Allemagne)": "^GDAXI",
+    "FTSE 100 (Royaume-Uni)": "^FTSE",
+    "IBEX 35 (Espagne)": "^IBEX",
+    "FTSE MIB (Italie)": "FTSEMIB.MI",
+    "AEX (Pays-Bas)": "^AEX",
+    "OMX Stockholm 30 (Suède)": "^OMX",
+}
 
 # Fonctions
 @st.cache_resource
@@ -264,7 +275,8 @@ if page == pages[4]:
         st.markdown('**Waterfall :**')
         st_shap(shap.plots.waterfall(explainer[row_number]), height=500, width=1000)
 
-    st.write('\n\n\n')
+    st.text("")
+    st.text("")
     st.markdown(
         """
         Les variables sont :
@@ -295,11 +307,11 @@ if page == pages[4]:
 if page == pages[5]:
     st.header("Stratégies Online Portfolio Allocation")
 
-    choix = ['Random Forest Classifier', 'Random Forest Regressor']
-    option = st.selectbox('Choix du modèle :', choix, key ='model_choice')
-    st.write(f'Le modèle choisi est {option}.')
+    choix_2 = ['Random Forest Classifier', 'Random Forest Regressor']
+    option_2 = st.selectbox('Choix du modèle :', choix_2, key ='model_choice')
+    st.write(f'Le modèle choisi est {option_2}.')
 
-    modele = selection_model(option)
+    modele = selection_model(option_2)
 
     init_nb_action = 25
 
@@ -310,7 +322,7 @@ if page == pages[5]:
         value=init_nb_action
         )
     
-    if option == 'Random Forest Classifier':
+    if option_2 == 'Random Forest Classifier':
         probs = modele.predict_proba(data_2024)
         
         df_predicted = pd.concat(
@@ -330,10 +342,12 @@ if page == pages[5]:
         portfolio = portfolio.head(nb_action)
         st.dataframe(portfolio[['Ticker','Probabilité']].head(nb_action))
 
-    elif option == 'Random Forest Regressor':
+    elif option_2 == 'Random Forest Regressor':
         y_pred = modele.predict(data_2024)  
     
     gains = gain_calculation(portfolio['Ticker'].to_list())
+    
+    references = gain_calculation([v for v in indices_reference.values()])
 
     strategies = ['Portefeuille équipondéré', 'Portefeuille pondéré par la probabilité']
     strategie = st.selectbox('Choix du modèle :', strategies, key ='strategie_choice')
@@ -356,6 +370,14 @@ if page == pages[5]:
                     
         to_display = generate_display_text_2(performance, nb_action)
         st.markdown(to_display, unsafe_allow_html=True)
+        st.text("")
+        st.text("")
+
+    st.markdown('__Indices de référence depuis le 1er janvier 2024 :__')
+    for i, (key, value) in enumerate(indices_reference.items()):
+        st.text(f"     {key} : {round(references[i] * 100,2)}%")
+
+
     
 
 
