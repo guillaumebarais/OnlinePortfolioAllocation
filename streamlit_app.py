@@ -44,15 +44,16 @@ def import_stock_data(ticker):
     try:
         yf_instance = yf.download(ticker, start='2023-01-01', end='2024-09-07')
     except Exception as e:
-        print(f"Erreur lors du téléchargement des données : {e}")
+        st.error(f"Erreur lors du téléchargement des données : {e}")
         return None
     return yf_instance
 
-def return_calculation(stock_data, today=today_pd_format, first_date='2024-01-01'):
+def variation_calculation(stock_data, today=today_pd_format, first_date='2024-01-01'):
     idx_first_day = stock_data.index.searchsorted(first_date)
     open = stock_data['Open'].iloc[idx_first_day]
     close = stock_data['Close'].asof(today)
-    return (close - open) / close
+    variation = (close - open) / close
+    return variation
 
 @st.cache_resource
 def shap_object_reconstruction(shap_values_dict):
@@ -72,14 +73,22 @@ def gain_calculation(tickers):
     for ticker in tickers:
         try:
             data = import_stock_data(ticker)
-            if data is None:
-                warning.append(ticker)
-                continue
-            gain.append(return_calculation(data))
+            gain.append(variation_calculation(data))
         except Exception as e:
             st.warning(f"Warning : no data for {ticker} ({e})")
             warning.append(ticker)
-    return gain, warning
+    return gain
+
+def strategie_1(gains):
+    """
+    Calcul de la performance pour un portefeuille équipondéré
+    """
+    try:
+        perf = sum(gains) / len(gains)
+    except Exception as e:
+        st.error(e)
+        return None
+    return perf
     
 # Initialisation Python
 data_2024 = read_df(data_2024_file)
@@ -164,29 +173,29 @@ if page == pages[4]:
     st.subheader(f'Variation du cours de l\'action {action} en 2024')
 
     ticker = dico_isin_ticker[isin]
-    cours = import_stock_data(ticker)
-    if cours is None:
-        st.error(f'Erreur : Le cours de l\'action {action} n\'a pas pu être téléchargé sur Yahoo Finance')
-    else:
-        return_2024 = return_calculation(cours)
+    cours = import_stock_data(ticker) 
 
+    try:
+        return_2024 = variation_calculation(cours)
         st.write(f'{pd.Series(cours.index).dt.date.iloc[-1]} : {ticker}')
         st.markdown(f'Le cours de l\'action {action} a varié de <span style="color:blue; font-weight:bold;">{round(return_2024 * 100, 2)}%</span> \
-             depuis le 1er janvier 2024', unsafe_allow_html=True)
-
-        
+            depuis le 1er janvier 2024.', unsafe_allow_html=True)
+  
         fig = px.line(
             cours.reset_index(), x='Date', y=['Open', 'Close'],
             title=f'Cours de l\'action {action}'
             )
         fig.add_vline(x='2024-01-01', line_width=3, line_dash="dash", line_color="black")
+    
         st.plotly_chart(fig)
+    except Exception as e:
+        st.error(f"Erreur : {e}")
 
     st.subheader(f'Prédiction pour l\'année 2024')
 
     choix = ['Random Forest Classifier', 'Random Forest Regressor']
     option = st.selectbox('Choix du modèle :', choix, key ='model_choice')
-    st.write('Le modèle choisi est ', option)
+    st.write(f'Le modèle choisi est {option}.')
 
     modele = selection_model(option)
 
@@ -288,7 +297,7 @@ if page == pages[5]:
 
     choix = ['Random Forest Classifier', 'Random Forest Regressor']
     option = st.selectbox('Choix du modèle :', choix, key ='model_choice')
-    st.write('Le modèle choisi est ', option)
+    st.write(f'Le modèle choisi est {option}.')
 
     modele = selection_model(option)
 
@@ -322,9 +331,31 @@ if page == pages[5]:
         st.dataframe(portfolio[['Ticker','Probabilité']].head(nb_action))
 
     elif option == 'Random Forest Regressor':
-        y_pred = modele.predict(data_2024)
-
-    gain, warning = gain_calculation(portfolio['Ticker'].to_list())  
+        y_pred = modele.predict(data_2024)  
     
-    st.write(gain)
+    gains = gain_calculation(portfolio['Ticker'].to_list())
+
+    strategies = ['Portefeuille équipondéré', 'Portefeuille pondéré par la probabilité']
+    strategie = st.selectbox('Choix du modèle :', strategies, key ='strategie_choice')
+    st.write(f'La stratégie choisie est {strategie}.')
+
+    if strategie == 'Portefeuille équipondéré':
+        performance = strategie_1(gains)
+
+        def generate_display_text_2(performance, nb_action):
+                """
+                Génère le texte à afficher en fonction de la performance
+                """
+                if performance >= 0:
+                    color = 'green'
+                else:
+                    color = 'red'
+
+                return f"Depuis le 1er janvier 2024, la performance avec un portefeuille équipondéré de {nb_action} actions est de \
+                    <span style='color:{color}; font-weight:bold;'>{round(performance * 100, 1)}%</span>"            
+                    
+        to_display = generate_display_text_2(performance, nb_action)
+        st.markdown(to_display, unsafe_allow_html=True)
+    
+
 
