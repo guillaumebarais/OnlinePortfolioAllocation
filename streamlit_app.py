@@ -387,12 +387,12 @@ if page == pages[5]:
         probs = rfc.predict_proba(data_2024)
         y_pred = rfr.predict(data_2024)
 
-        combine = probs[:,1] * y_pred
+        combine = np.sqrt(probs[:,1] * probs[:,1] + y_pred * y_pred)
 
         df_predicted = pd.concat(
             [
                 data_2024,
-                pd.DataFrame(combine, index=data_2024.index, columns=['Combinaison'])
+                pd.DataFrame(combine, index=data_2024.index, columns=['Norme L2'])
                 ],
                 axis=1
                 )
@@ -400,10 +400,10 @@ if page == pages[5]:
         df_predicted['Nom'] = df_predicted.index.map(dico_isin_name)
         df_predicted['Ticker'] = df_predicted.index.map(dico_isin_ticker)
     
-        portfolio = df_predicted.sort_values(by='Combinaison', ascending=False)
+        portfolio = df_predicted.sort_values(by='Norme L2', ascending=False)
         portfolio = portfolio.set_index('Nom')
         portfolio = portfolio.head(nb_action)
-        st.table(portfolio[['Ticker','Combinaison']].head(nb_action))
+        st.table(portfolio[['Ticker','Norme L2']].head(nb_action))
     
 
     selected_rows = []
@@ -459,7 +459,7 @@ if page == pages[5]:
         elif option_2 == 'Random Forest Regressor':
             performance_pp = strategie_2(gains, tickers, selected_portfolio.rename(columns={'Variation' : 'Pred'}))
         elif option_2 == 'Mixte':
-            performance_pp = strategie_2(gains, tickers, selected_portfolio.rename(columns={'Combinaison' : 'Pred'}))       
+            performance_pp = strategie_2(gains, tickers, selected_portfolio.rename(columns={'Norme' : 'Pred'}))       
         perf_display_pp = generate_display_text_2(performance_pp)
         st.markdown(f"Depuis le 1er janvier 2024, la performance avec un portefeuille de {len(gains)} actions pondéré \
                     est de " + perf_display_pp +".", unsafe_allow_html=True)
