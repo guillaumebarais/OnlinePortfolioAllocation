@@ -105,30 +105,13 @@ def strategie_1(gains):
 
 def strategie_2(gains, tickers, portfolio):
     """
-    Calcul de la performance pour un portefeuille pondéré par la probabilité (RFC)
-    """
-    try:
-        weighted_gains = []
-        probs = []
-        for i, ticker in enumerate(tickers):
-            prob = portfolio.loc[portfolio['Ticker']==ticker, 'Probabilité'].values[0]
-            probs.append(prob)
-            weighted_gains.append(gains[i] * prob)
-        perf = sum(weighted_gains) / sum(probs)
-    except Exception as e:
-        st.error(f"Erreur : {e}")
-        return None
-    return perf
-
-def strategie_3(gains, tickers, portfolio):
-    """
     Calcul de la performance vpour un portefeuille pondéré par la variation de cours prédite (RFR)
     """
     try:
         weighted_gains = []
         variations = []
         for i, ticker in enumerate(tickers):
-            variation = portfolio.loc[portfolio['Ticker']==ticker, 'Variation'].values[0]
+            variation = portfolio.loc[portfolio['Ticker']==ticker, 'Pred'].values[0]
             variations.append(variation)
             weighted_gains.append(gains[i] * variation)
         perf = sum(weighted_gains) / sum(variations)
@@ -215,7 +198,7 @@ if page == pages[4]:
 
     isin = dico_name_isin[action]['isin']
     
-    st.dataframe(stock_info.loc[isin, features])
+    st.table(stock_info.loc[isin, features])
     st.write(stock_info.loc[isin, 'longBusinessSummary'])
 
     st.subheader(f'Variation du cours de l\'action {action} en 2024')
@@ -344,16 +327,18 @@ if page == pages[4]:
 if page == pages[5]:
     st.header("Stratégies Online Portfolio Allocation")
 
-    choix_2 = ['Random Forest Classifier', 'Random Forest Regressor']
+    st.subheader("Sélection du modèle")
+    choix_2 = ['Random Forest Classifier', 'Random Forest Regressor', 'Mixte']
     option_2 = st.selectbox('Choix du modèle :', choix_2, key ='model_choice')
     st.write(f'Le modèle choisi est {option_2}.')
 
-    modele = selection_model(option_2)
+    if option_2 != "Mixte":
+        modele = selection_model(option_2)
 
     init_nb_action = 25
 
     nb_action = st.slider(
-        'Nombre d\'actions retenus',
+        'Nombre d\'actions :',
         min_value=1,
         max_value=100,
         value=init_nb_action
@@ -377,7 +362,7 @@ if page == pages[5]:
         portfolio = df_predicted.sort_values(by='Probabilité', ascending=False)
         portfolio = portfolio.set_index('Nom')
         portfolio = portfolio.head(nb_action)
-        st.dataframe(portfolio[['Ticker','Probabilité']].head(nb_action))
+        st.table(portfolio[['Ticker','Probabilité']].head(nb_action))
 
     elif option_2 == 'Random Forest Regressor':
         y_pred = modele.predict(data_2024)  
@@ -396,15 +381,59 @@ if page == pages[5]:
         portfolio = df_predicted.sort_values(by='Variation', ascending=False)
         portfolio = portfolio.set_index('Nom')
         portfolio = portfolio.head(nb_action)
-        st.dataframe(portfolio[['Ticker','Variation']].head(nb_action))
-
-    gains, tickers, warnings = gain_calculation(portfolio['Ticker'].to_list())
+        st.table(portfolio[['Ticker','Variation']].head(nb_action))
     
+    elif option_2 == 'Mixte':
+        probs = rfc.predict_proba(data_2024)
+        y_pred = rfr.predict(data_2024)
+
+        combine = probs[:,1] * y_pred
+
+        df_predicted = pd.concat(
+            [
+                data_2024,
+                pd.DataFrame(combine, index=data_2024.index, columns=['Combinaison'])
+                ],
+                axis=1
+                )
+        
+        df_predicted['Nom'] = df_predicted.index.map(dico_isin_name)
+        df_predicted['Ticker'] = df_predicted.index.map(dico_isin_ticker)
+    
+        portfolio = df_predicted.sort_values(by='Combinaison', ascending=False)
+        portfolio = portfolio.set_index('Nom')
+        portfolio = portfolio.head(nb_action)
+        st.table(portfolio[['Ticker','Combinaison']].head(nb_action))
+    
+
+    selected_rows = []
+
+    with st.expander("Sélection d'un panier d'actions"):
+        st.write("Cochez les actions et sélectionnez")
+
+        for i, nom in enumerate(portfolio.index.values):
+            if st.checkbox(
+                f"{portfolio.loc[portfolio.index == nom].index.values[0]}",
+                key=i,
+                value=nom in selected_rows
+                ):
+                selected_rows.append(nom)
+
+        st.write("Nombre d'actions retenues :", len(selected_rows))
+        
+    if selected_rows:
+        selected_portfolio = portfolio[portfolio.index.isin(selected_rows)]
+    else:
+        selected_portfolio = portfolio
+
+    gains, tickers, warnings = gain_calculation(selected_portfolio['Ticker'].to_list())
+
+    st.subheader("Sélection de la stratégie")
     strategies = [
         'Portefeuille équipondéré',
-        'Portefeuille pondéré par la probabilité (Classification) ou la variation (Régression)'
+        'Portefeuille pondéré'
         ]
-    strategie = st.selectbox('Choix du modèle :', strategies, key ='strategie_choice')
+    strategie = st.selectbox('Choix de la stratégie :', strategies, key ='strategie_choice')
     st.write(f'La stratégie choisie est {strategie}.')
 
     def generate_display_text_2(performance):
@@ -422,16 +451,17 @@ if page == pages[5]:
         performance_pe = strategie_1(gains)
         perf_display_pe = generate_display_text_2(performance_pe)
         st.markdown(f"Depuis le 1er janvier 2024, la performance avec un portefeuille équipondéré \
-                    de {nb_action} actions est de " + perf_display_pe +".", unsafe_allow_html=True)
+                    de {len(gains)} actions est de " + perf_display_pe +".", unsafe_allow_html=True)
 
-    elif strategie == 'Portefeuille pondéré par la probabilité (Classification) ou la variation (Régression)':
-        if option_2 == 'Random Forest Classifier':
-            performance_pp = strategie_2(gains, tickers, portfolio)
-            perf_display_pp = generate_display_text_2(performance_pp)
+    elif strategie == 'Portefeuille pondéré':
+        if option_2 == 'Random Forest Classifier':         
+            performance_pp = strategie_2(gains, tickers, selected_portfolio.rename(columns={'Probabilité' : 'Pred'}))
         elif option_2 == 'Random Forest Regressor':
-            performance_pp = strategie_3(gains, tickers, portfolio)
-            perf_display_pp = generate_display_text_2(performance_pp)
-        st.markdown(f"Depuis le 1er janvier 2024, la performance avec un portefeuille de {nb_action} actions pondéré \
+            performance_pp = strategie_2(gains, tickers, selected_portfolio.rename(columns={'Variation' : 'Pred'}))
+        elif option_2 == 'Mixte':
+            performance_pp = strategie_2(gains, tickers, selected_portfolio.rename(columns={'Combinaison' : 'Pred'}))       
+        perf_display_pp = generate_display_text_2(performance_pp)
+        st.markdown(f"Depuis le 1er janvier 2024, la performance avec un portefeuille de {len(gains)} actions pondéré \
                     est de " + perf_display_pp +".", unsafe_allow_html=True)
 
     st.text("")
@@ -441,7 +471,7 @@ if page == pages[5]:
     references, ref_tickers, ref_warnings = gain_calculation([k for k in indices_reference.keys()])
 
     for i, indice in enumerate(ref_tickers):
-        st.text(f"{indices_reference[indice]} : {round(references[i] * 100,2)}%")
+        st.write(f"{indices_reference[indice]} : {round(references[i] * 100,2)}%")
 
 
     
