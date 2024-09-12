@@ -1,4 +1,5 @@
 import streamlit as st
+from st_social_media_links import SocialMediaIcons
 import pandas as pd
 import numpy as np
 import joblib
@@ -10,6 +11,7 @@ import shap
 from streamlit_shap import st_shap
 
 # Définition des variables
+DataScientest = """https://datascientest.com/"""
 rfc_file = '20240909_Classifier_RFC.joblib'
 rfr_file = '20240909_Regressor_RFR.joblib'
 data_2024_file = 'preprocessed_data_2024.csv'
@@ -119,7 +121,7 @@ def strategie_2(gains, tickers, portfolio):
         st.error(f"Erreur : {e}")
         return None
     return perf
-    
+  
 # Initialisation Python
 data_2024 = read_df(data_2024_file)
 
@@ -169,11 +171,37 @@ pages=[
     "Stratégies OPA",
     ]
 page=st.sidebar.radio("Aller vers", pages)
+st.sidebar.write("")
+st.sidebar.subheader("Auteur :")
+
+st.sidebar.markdown("**Guillaume BARAIS**")
+
+social_media_links = [
+        "https://www.linkedin.com/in/guillaume-barais",
+        "https://github.com/guillaumebarais/",]
+
+social_media_icons = SocialMediaIcons(social_media_links) 
+
+social_media_icons.render(sidebar=True, justify_content="left")
+
 
 # Introduction
 if page == pages[0]:
     st.header('Introduction')
-    st.markdown('L\'objectif de ce projet est de créer un modèle d\'allocation de portefeuille qui adapte sa stratégie “online”.')
+    
+    st.markdown("""Le projet Online Portfolio Allocation est un projet de Data Science réalisé
+                dans le cadre de la [formation Data Scientist](https://datascientest.com/formation-data-scientist)
+                 de l'école [DataScientest](https://datascientest.com/).
+                """)
+    
+    st.markdown("""Un projet d'**Online Portfolio Allocation** (OPA) consiste à utiliser des algorithmes et des techniques de machine learning pour gérer et optimiser un portefeuille d'investissements en ligne.""")
+    st.markdown("""Quelques points clés :""")
+    st.markdown("""1. **Objectif** : Maximiser les rendements tout en minimisant les risques en répartissant les investissements de manière optimale entre différentes actions.""")
+    st.markdown("""2. **Données** : Utilisation de données financières historiques et en temps réel pour prendre des décisions d'investissement informées.""")
+    st.markdown("""3. **Algorithmes** : Implémentation d'algorithmes de Machine Learning pour prévoir les rendements et les probabilités.""")
+    st.markdown("""5. **Personnalisation** : Adaptation des stratégies d'investissement aux préférences et aux objectifs spécifiques de chaque investisseur.""")
+    st.markdown("""6. **Automatisation** : Automatisation des décisions d'achat et de vente pour réagir rapidement aux changements du marché.""")
+             
 
 # Données
 if page == pages[1]:

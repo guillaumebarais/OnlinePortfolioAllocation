@@ -7,3 +7,4 @@ plotly.express==0.4.1
 matplotlib==3.9.2
 shap==0.45.1
 streamlit_shap==1.0.2
+st-social-media-links==0.1.3
