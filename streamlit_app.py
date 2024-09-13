@@ -9,6 +9,8 @@ import plotly.express as px
 import json
 import shap
 from streamlit_shap import st_shap
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 # Définition des variables
 DataScientest = """https://datascientest.com/"""
@@ -19,6 +21,7 @@ stock_info_file = '20240423_PEA_stocks_info.csv'
 dico_name_isin_file = 'dictionnaire_nom_isin.json'
 dico_isin_name_file = 'dictionnaire_isin_nom.json'
 dico_isin_ticker_file = 'dictionnaire_isin_ticker.json'
+dico_exchange_file = 'dictionnaire_exchange.json'
 explainer_shap_RFC_file = 'explainer_shap_RFC.json'
 explainer_shap_RFR_file = 'explainer_shap_RFR.json'
 today = date.today()
@@ -154,6 +157,9 @@ with open(dico_isin_name_file, 'r') as f:
 with open(dico_isin_ticker_file, 'r') as f:
     dico_isin_ticker = json.load(f)
 
+with open(dico_exchange_file, 'r') as f:
+    dico_exchange = json.load(f)
+
 with open(explainer_shap_RFC_file, 'r') as f:
     shap_values_RFC_dict = json.load(f)
 
@@ -252,7 +258,7 @@ if page == pages[1]:
     st.subheader('Collecte des données')
 
     st.write("La librairie Python [yfinance](https://github.com/ranaroussi/yfinance) a été utilisée pour accéder aux données du site [Yahoo Finance](https://finance.yahoo.com/).")
-    st.write("Les données, couvrant 4657 sociétés sur la période de 2020 à 2024, occupent un espace de 1,75 Go.")
+    st.write("Les données, comprenant 486 variables et couvrant 4657 sociétés sur la période de 2020 à 2024, occupent un espace de 1,75 Go.")
     st.write("__Exemple de données pour Renault SaS (ISIN FR0000131906) :__")
     st.echo()
     with st.echo():
@@ -292,6 +298,91 @@ if page == pages[1]:
 # Analyse des Données
 if page == pages[2]:
     st.header('Analyse des Données')
+    st.subheader('Informations générales')
+    st.write("""
+             9 variables sont retenus sur les 146 variables obtenus par la méthode .info :
+             * **isin** (chaîne de caractères) : Code du titre financier,
+             * **name** (chaîne de caractères) : Nom de la société,
+             * **country** (catégories) : Pays de la société,
+             * **exchange** (catégories) : Place de cotation,
+             * **industry** (catégories) : Secteur économique de l'entreprise.
+             * **sector** (catégories) : Catégorie économique plus large.
+             * **longBusinessSummary** (chaîne de caractères) : Description détaillée des activités commerciales,
+             * **fullTimeEmployees** (entier) : Nombre total d'employés,
+             * **marketCap (entier)** : Capitalisation boursière totale.
+             """)
+    
+    st.subheader("Sélection de la variable à visualiser")
+    variable_infos = [
+        'country', 
+        'exchange', 
+        'industry et sector', 
+        'longBusinessSummary', 
+        'fullTimeEmployees',
+        'marketCap']
+    choix_info = st.selectbox('Choix du modèle :', variable_infos, key ='info_choice')
+    st.write(f'Le variable choisie est {choix_info}.')
+
+    if choix_info == 'country':
+        df_country = stock_info['country'].value_counts().reset_index()
+        df_country.columns = ['Pays', 'Actions']
+        plt.figure(figsize=(10,6))
+        sns.barplot(data=df_country, x='Actions', y='Pays', hue='Pays', orient='h')
+        plt.xticks(ticks=range(0, df_country['Actions'].max()+1, 50))
+        plt.title("Répartition par pays")
+        st.pyplot(plt)
+
+        st.write("""
+                Traitement des valeurs manquantes : à partir des deux premières lettres des codes ISIN.
+                Par exemple, **FR**0000131906 : France, **PL**PKN0000018 : Pologne.
+                """)
+        
+        st.write("Les pays non éligibles ont été retirés du dataset.")
+
+        st.write("""
+                Encodage : Catégories avec LabelEncoder()
+                """)
+        
+    if choix_info == 'exchange':
+        df_exchange = stock_info['exchange'].value_counts().reset_index()
+        df_exchange['exchange'] = df_exchange['exchange'].map(dico_exchange)
+        df_exchange.columns = ['Place de cotation', 'Actions']
+
+        plt.figure(figsize=(10,6))
+        sns.barplot(data=df_exchange.iloc[:20,:], x='Actions', y='Place de cotation', hue='Place de cotation', orient='h')
+        plt.xticks(ticks=range(0, df_exchange['Actions'].max()+1, 50))
+        plt.title("Les 20 principales places de cotation")
+        st.pyplot(plt)
+
+        st.write("""
+                Traitement des valeurs manquantes : Pas de valeurs manquantes
+                """)
+
+        st.write("""
+                Encodage : Catégories avec LabelEncoder()
+                """)
+
+        st.warning("""Les places boursières non éligibles au PEA non pas été éliminées du dataset. Par exemple : Londres.
+                   """)
+
+
+    if choix_info == 'industry et sector':
+        df_sector = stock_info['sector'].value_counts().reset_index()
+        df_sector.columns = ['Secteur économique', 'Actions']
+        plt.figure(figsize=(10,6))
+        sns.barplot(data=df_sector, x='Actions', y='Secteur économique', hue='Secteur économique', orient='h')
+        plt.xticks(ticks=range(0, df_sector['Actions'].max()+1, 50))
+        plt.title("Répartition par secteur économique")
+        st.pyplot(plt)
+
+        st.write("""
+                Traitement des valeurs manquantes : à partir des deux premières lettres des codes ISIN.
+                Par exemple, **FR**0000131906 : France, **PL**PKN0000018 : Pologne.
+                """)
+
+        st.write("""
+                Encodage : Catégories avec LabelEncoder()
+                """)
 
     disclaimer_display()
 
