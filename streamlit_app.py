@@ -180,7 +180,7 @@ st.sidebar.title("Sommaire")
 pages=[
     "Introduction",
     "Données",
-    "Visualisation et pré-processing",
+    "Analyse des Données",
     "Machine Learning",
     "Prédiction",
     "Stratégies OPA",
@@ -289,9 +289,9 @@ if page == pages[1]:
 
     disclaimer_display()
 
-# Visualisation
+# Analyse des Données
 if page == pages[2]:
-    st.header('Analyse des données')
+    st.header('Analyse des Données')
 
     disclaimer_display()
 
@@ -574,7 +574,7 @@ if page == pages[5]:
         elif option_2 == 'Random Forest Regressor':
             performance_pp = strategie_2(gains, tickers, selected_portfolio.rename(columns={'Variation' : 'Pred'}))
         elif option_2 == 'Mixte':
-            performance_pp = strategie_2(gains, tickers, selected_portfolio.rename(columns={'Norme' : 'Pred'}))       
+            performance_pp = strategie_2(gains, tickers, selected_portfolio.rename(columns={'Norme L2' : 'Pred'}))       
         perf_display_pp = generate_display_text_2(performance_pp)
         st.markdown(f"Depuis le 1er janvier 2024, la performance avec un portefeuille de {len(gains)} actions pondéré \
                     est de " + perf_display_pp +".", unsafe_allow_html=True)
