@@ -344,12 +344,11 @@ if page == pages[2]:
                 """)
         
     if choix_info == 'exchange':
-        df_exchange = stock_info['exchange'].value_counts().reset_index()
-        df_exchange['exchange'] = df_exchange['exchange'].map(dico_exchange)
+        df_exchange = stock_info['exchange'].map(dico_exchange).value_counts().reset_index()
         df_exchange.columns = ['Place de cotation', 'Actions']
 
         plt.figure(figsize=(10,6))
-        sns.barplot(data=df_exchange.iloc[:20,:], x='Actions', y='Place de cotation', hue='Place de cotation', orient='h')
+        sns.barplot(data=df_exchange.iloc[:20,:], x='Actions', y='Place de cotation', hue='Place de cotation', orient='h', gap=0.2)
         plt.xticks(ticks=range(0, df_exchange['Actions'].max()+1, 50))
         plt.title("Les 20 principales places de cotation")
         st.pyplot(plt)
@@ -362,9 +361,10 @@ if page == pages[2]:
                 Encodage : Catégories avec LabelEncoder()
                 """)
 
-        st.warning("""Les places boursières non éligibles au PEA non pas été éliminées du dataset. Par exemple : Londres.
+        st.warning("""Les places boursières non éligibles au PEA non pas été éliminées du dataset. Par exemple : Londres et New-York.
                    """)
 
+        print(df_exchange)
 
     if choix_info == 'industry et sector':
         df_sector = stock_info['sector'].value_counts().reset_index()
