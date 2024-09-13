@@ -257,12 +257,13 @@ if page == pages[1]:
     st.echo()
     with st.echo():
         isin = "FR0000131906"
-        data = yf.Ticker(isin)
+        isin_ticker = {"FR0000131906" : "RNO.PA"}
+        data = yf.Ticker(isin_ticker[isin])
         data_info = pd.DataFrame(data.info).T.rename(columns={0 : isin})
         data_balance_sheet = pd.DataFrame(data.balance_sheet)
         data_cash_flow = pd.DataFrame(data.cash_flow)
         data_financials = pd.DataFrame(data.financials)
-        data_cours = yf.download(isin).sort_values(by='Date', ascending=False)
+        data_cours = yf.download(isin_ticker[isin]).sort_values(by='Date', ascending=False)
         
         st.markdown("**Informations générales :**")
         st.write("Nombre de variables :", data_info.shape[0])
