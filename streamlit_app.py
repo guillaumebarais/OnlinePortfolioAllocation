@@ -37,10 +37,10 @@ indices_reference = {
 
 disclaimer = """
     L'application Online Portfolio Allocation est conçue à des fins pédagogiques uniquement. Les informations et 
-    stratégies d'allocation de portefeuille boursier présentées sur cette plateforme sont fournies à titre éducatif 
-    et ne constituent en aucun cas des conseils en investissements. Nous ne garantissons pas l'exactitude, 
-    l'exhaustivité ou la pertinence des informations fournies. Les utilisateurs sont invités à consulter un conseiller 
-    financier professionnel avant de prendre toute décision d'investissement.  
+    stratégies d'allocation de portefeuille boursier présentées sur cette plateforme ne constituent en aucun cas 
+    des conseils en investissements. Nous ne garantissons pas l'exactitude, l'exhaustivité ou la pertinence des 
+    informations fournies.  
+    Les utilisateurs sont invités à consulter un conseiller financier professionnel avant de prendre toute décision d'investissement.  
     L'utilisation de cette application se fait à vos propres risques, et Online Portfolio Allocation décline toute 
     responsabilité en cas de pertes ou de dommages résultant de l'utilisation des informations contenues sur cette plateforme.
 """
@@ -247,9 +247,46 @@ if page == pages[1]:
                 * [Site ABC Bourse](https://www.abcbourse.com/download/libelles) qui publie des données de plusieurs marchés européens comme les marchés allemand, belge, espagnol, hollandais, italien et portugais.  
                 """)
 
-    for i in range(10):
-        st.write("")
-    st.markdown(disclaimer, unsafe_allow_html=True)
+    st.write("5132 sociétés sont initialement identifiées par leur ISIN (Intenational Securities Identification Number).")
+    
+    st.subheader('Collecte des données')
+
+    st.write("La librairie Python [yfinance](https://github.com/ranaroussi/yfinance) a été utilisée pour accéder aux données du site [Yahoo Finance](https://finance.yahoo.com/).")
+    st.write("Les données, couvrant 4657 sociétés sur la période de 2020 à 2024, occupent un espace de 1,75 Go.")
+    st.write("__Exemple de données pour Renault SaS (ISIN FR0000131906) :__")
+    st.echo()
+    with st.echo():
+        isin = "FR0000131906"
+        data = yf.Ticker(isin)
+        data_info = pd.DataFrame(data.info).T.rename(columns={0 : isin})
+        data_balance_sheet = pd.DataFrame(data.balance_sheet)
+        data_cash_flow = pd.DataFrame(data.cash_flow)
+        data_financials = pd.DataFrame(data.financials)
+        data_cours = yf.download(isin).sort_values(by='Date', ascending=False)
+        
+        st.markdown("**Informations générales :**")
+        st.write("Nombre de variables :", data_info.shape[0])
+        st.dataframe(data_info.loc[:,"FR0000131906"])
+        
+        st.markdown("**Bilans annuels des bilans comptables :**")
+        st.write("Nombre de variables :", data_balance_sheet.shape[0])
+        st.dataframe(data_balance_sheet)
+        
+        st.markdown("**Bilans annuels des flux financiers :**")
+        st.write("Nombre de variables :", data_cash_flow.shape[0])
+        st.dataframe(data_cash_flow)
+        
+        st.markdown("**Bilans annuels des comptes de résultat :**")
+        st.write("Nombre de variables :", data_financials.shape[0])
+        st.dataframe(data_financials)
+        
+        st.markdown("**Cours de l'action :**")
+        st.write("Nombre de variables :", data_cours.shape[1])
+        st.dataframe(data_cours)
+        fig = px.line(data_cours.reset_index(), x='Date', y=['Open', 'Close'], title=f'Cours d\'ouverture et de clôture')
+        st.plotly_chart(fig)
+
+    disclaimer_display()
 
 # Visualisation
 if page == pages[2]:
