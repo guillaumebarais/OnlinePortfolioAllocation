@@ -35,7 +35,22 @@ indices_reference = {
     "^OMX": "OMX Stockholm 30 (Suède)",
 }
 
+disclaimer = """
+    L'application Online Portfolio Allocation est conçue à des fins pédagogiques uniquement. Les informations et 
+    stratégies d'allocation de portefeuille boursier présentées sur cette plateforme sont fournies à titre éducatif 
+    et ne constituent en aucun cas des conseils en investissements. Nous ne garantissons pas l'exactitude, 
+    l'exhaustivité ou la pertinence des informations fournies. Les utilisateurs sont invités à consulter un conseiller 
+    financier professionnel avant de prendre toute décision d'investissement.  
+    L'utilisation de cette application se fait à vos propres risques, et Online Portfolio Allocation décline toute 
+    responsabilité en cas de pertes ou de dommages résultant de l'utilisation des informations contenues sur cette plateforme.
+"""
+
 # Fonctions
+def disclaimer_display(disclaimer=disclaimer):
+    for i in range (10):
+        st.write("")
+    st.info(disclaimer, icon="ℹ️")
+
 @st.cache_resource
 def read_df(file):
      df = pd.read_csv(file, index_col='isin')
@@ -165,15 +180,15 @@ st.sidebar.title("Sommaire")
 pages=[
     "Introduction",
     "Données",
-    "Visualisation",
+    "Visualisation et pré-processing",
     "Machine Learning",
     "Prédiction",
     "Stratégies OPA",
     ]
 page=st.sidebar.radio("Aller vers", pages)
-st.sidebar.write("")
-st.sidebar.subheader("Auteur :")
 
+st.sidebar.write("")
+st.sidebar.write("")
 st.sidebar.markdown("**Guillaume BARAIS**")
 
 social_media_links = [
@@ -184,36 +199,69 @@ social_media_icons = SocialMediaIcons(social_media_links)
 
 social_media_icons.render(sidebar=True, justify_content="left")
 
-
 # Introduction
 if page == pages[0]:
     st.header('Introduction')
-    
+    st.subheader('Projet')
     st.markdown("""Le projet Online Portfolio Allocation est un projet de Data Science réalisé
                 dans le cadre de la [formation Data Scientist](https://datascientest.com/formation-data-scientist)
                  de l'école [DataScientest](https://datascientest.com/).
                 """)
     
     st.markdown("""Un projet d'**Online Portfolio Allocation** (OPA) consiste à utiliser des algorithmes et des techniques de machine learning pour gérer et optimiser un portefeuille d'investissements en ligne.""")
-    st.markdown("""Quelques points clés :""")
-    st.markdown("""1. **Objectif** : Maximiser les rendements tout en minimisant les risques en répartissant les investissements de manière optimale entre différentes actions.""")
-    st.markdown("""2. **Données** : Utilisation de données financières historiques et en temps réel pour prendre des décisions d'investissement informées.""")
-    st.markdown("""3. **Algorithmes** : Implémentation d'algorithmes de Machine Learning pour prévoir les rendements et les probabilités.""")
-    st.markdown("""5. **Personnalisation** : Adaptation des stratégies d'investissement aux préférences et aux objectifs spécifiques de chaque investisseur.""")
-    st.markdown("""6. **Automatisation** : Automatisation des décisions d'achat et de vente pour réagir rapidement aux changements du marché.""")
-             
+    st.markdown("""
+                Quelques points clés :
+                * **Objectif** : Maximiser les rendements tout en minimisant les risques en répartissant les investissements de manière optimale entre différentes actions.
+                * **Données** : Utilisation de données financières historiques et en temps réel pour prendre des décisions d'investissement informées.
+                * **Algorithmes** : Implémentation d'algorithmes de Machine Learning pour prévoir les rendements et les probabilités.
+                * **Personnalisation** : Adaptation des stratégies d'investissement aux préférences et aux objectifs spécifiques de chaque investisseur.
+                * **Automatisation** : Automatisation des décisions d'achat et de vente pour réagir rapidement aux changements du marché.
+    """)
+    st.subheader('Cadrage du projet')
+    st.markdown("""
+                * **Périmètre** : Actions européennes éligibles au PEA.
+                * **Objectif** : Créer plusieurs stratégies d'allocation personnalisable pour battre les principaux indices européens esur l'année 2024.
+                * **Méthodologie** :
+                    * Utilisation des donnnées de profil de l'entreprise, des données financières, des données comptables et des données boursières
+                    * Analyse des données, data visualisation et pré-processing.
+                    * Entraînement de modèles de machine learning de classification et de régression.
+                    * Interprétabilité des résultats.
+                    * Définition de stratégies d'investissement.
+                            
+    """)
 
+    disclaimer_display()
+             
 # Données
 if page == pages[1]:
     st.header('Données')
+    st.subheader('Liste des actions éligibles au PEA')
+    st.write("Sont éligibles au PEA, les actions de sociétés qui ont leur siège dans l'Union Européenne ou dans un État de l'Espace économique européen (EEE) : Europe des 27 + Islande, Norvège et Liechtenstein.")
+    st.markdown("""
+                La liste des sociétés a été construite à partir de plusieurs sources :
+                * [Euronext](https://live.euronext.com/fr/products/equities/list), société qui gère plusieurs marchés boursiers européens répartis sur 6 pays : Belgique, France, Irlande, Norvège, Portugal et Pays-Bas,  
+                * [STOXX Europe 600](https://www.stoxx.com/selection-lists), indice boursier composé de 600 des principales capitalisations boursières européennes,
+                * [XETRA](https://www.deutsche-boerse-cash-market.com/dbcm-en/instruments-statistics/statistics/listes-companies) opéré est Deutsche Börse en Allemagne,
+                * [Nasdaq Nordic](https://www.nasdaqomxnordic.com/digitalAssets/111/111951_nordic-list-2024-02-29.xlsx) qui comprend les marchés suédois, finlandais, danois, islandais et des 3 pays baltes,
+                * [Bourse de Varsovie](https://www.gpw.pl/gpw-statistics#5) plus grande bourse d'Europe centrale et orientale,
+                * [Site ABC Bourse](https://www.abcbourse.com/download/libelles) qui publie des données de plusieurs marchés européens comme les marchés allemand, belge, espagnol, hollandais, italien et portugais.  
+                """)
+
+    for i in range(10):
+        st.write("")
+    st.markdown(disclaimer, unsafe_allow_html=True)
 
 # Visualisation
 if page == pages[2]:
-    st.header('Visualisation')
+    st.header('Analyse des données')
+
+    disclaimer_display()
 
 # Machine Learning
 if page == pages[3]:
     st.header("Machine Learning")
+
+    disclaimer_display()
 
 # Prédiction de la variation du cours d'une action
 if page == pages[4]:
@@ -350,6 +398,7 @@ if page == pages[4]:
         """
         )
 
+    disclaimer_display()
 
 # Stratégies OPA
 if page == pages[5]:
@@ -500,6 +549,8 @@ if page == pages[5]:
 
     for i, indice in enumerate(ref_tickers):
         st.write(f"{indices_reference[indice]} : {round(references[i] * 100,2)}%")
+
+    disclaimer_display()
 
 
     
