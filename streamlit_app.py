@@ -263,38 +263,49 @@ if page == pages[1]:
     st.write("La librairie Python [yfinance](https://github.com/ranaroussi/yfinance) a été utilisée pour accéder aux données du site [Yahoo Finance](https://finance.yahoo.com/).")
     st.write("Les données, comprenant 486 variables et couvrant 4657 sociétés sur la période de 2020 à 2024, occupent un espace de 1,75 Go.")
     st.write("__Exemple de données pour Renault SaS (ISIN FR0000131906) :__")
-    st.echo()
-    with st.echo():
-        isin = "FR0000131906"
-        isin_ticker = {"FR0000131906" : "RNO.PA"}
-        data = yf.Ticker(isin_ticker[isin])
-        data_info = pd.DataFrame(data.info).T.rename(columns={0 : isin})
-        data_balance_sheet = pd.DataFrame(data.balance_sheet)
-        data_cash_flow = pd.DataFrame(data.cash_flow)
-        data_financials = pd.DataFrame(data.financials)
-        data_cours = yf.download(isin_ticker[isin]).sort_values(by='Date', ascending=False)
-        
-        st.markdown("**Informations générales :**")
-        st.write("Nombre de variables :", data_info.shape[0])
-        st.dataframe(data_info.loc[:,"FR0000131906"])
-        
-        st.markdown("**Bilans annuels des bilans comptables :**")
-        st.write("Nombre de variables :", data_balance_sheet.shape[0])
-        st.dataframe(data_balance_sheet)
-        
-        st.markdown("**Bilans annuels des flux financiers :**")
-        st.write("Nombre de variables :", data_cash_flow.shape[0])
-        st.dataframe(data_cash_flow)
-        
-        st.markdown("**Bilans annuels des comptes de résultat :**")
-        st.write("Nombre de variables :", data_financials.shape[0])
-        st.dataframe(data_financials)
-        
-        st.markdown("**Cours de l'action :**")
-        st.write("Nombre de variables :", data_cours.shape[1])
-        st.dataframe(data_cours)
-        fig = px.line(data_cours.reset_index(), x='Date', y=['Open', 'Close'], title=f'Cours d\'ouverture et de clôture')
-        st.plotly_chart(fig)
+    
+    all_actions = [dico_isin_name[isin] for isin in stock_info.index.values]
+    selected_action = st.selectbox(
+        'Choix de l\'action',
+        all_actions,
+        key ='all_stock_choice',
+        index=None,
+        placeholder="Sélectionner une action...")
+    st.write('L\'action choisie est ', selected_action, '.')
+    
+    if selected_action is not None:
+        isin = dico_name_isin[selected_action]['isin']
+
+        with st.echo():    
+            ticker = dico_isin_ticker[isin]
+            data = yf.Ticker(ticker)
+            data_info = pd.DataFrame(data.info).T.rename(columns={0 : isin})
+            data_balance_sheet = pd.DataFrame(data.balance_sheet)
+            data_cash_flow = pd.DataFrame(data.cash_flow)
+            data_financials = pd.DataFrame(data.financials)
+            data_cours = yf.download(ticker).sort_values(by='Date', ascending=False)
+            
+            st.markdown("**Informations générales :**")
+            st.write("Nombre de variables :", data_info.shape[0])
+            st.dataframe(data_info.loc[:, isin])
+            
+            st.markdown("**Bilans annuels des bilans comptables :**")
+            st.write("Nombre de variables :", data_balance_sheet.shape[0])
+            st.dataframe(data_balance_sheet)
+            
+            st.markdown("**Bilans annuels des flux financiers :**")
+            st.write("Nombre de variables :", data_cash_flow.shape[0])
+            st.dataframe(data_cash_flow)
+            
+            st.markdown("**Bilans annuels des comptes de résultat :**")
+            st.write("Nombre de variables :", data_financials.shape[0])
+            st.dataframe(data_financials)
+            
+            st.markdown("**Cours de l'action :**")
+            st.write("Nombre de variables :", data_cours.shape[1])
+            st.dataframe(data_cours)
+            fig = px.line(data_cours.reset_index(), x='Date', y=['Open', 'Close'], title=f'Cours d\'ouverture et de clôture')
+            st.plotly_chart(fig)
 
     disclaimer_display()
 
@@ -310,7 +321,7 @@ if page == pages[2]:
              * **exchange** (catégories) : Place de cotation,
              * **sector** (catégories) : Secteur économique,
              * **industry** (catégories) : Catégorie industrielle,
-             * **longBusinessSummary** (chaîne de caractères) : Description détaillée des activités commerciales,
+             * **longBusinessSummary** (chaîne de caractères) : Description détaillée de l'activité,
              * **fullTimeEmployees** (entier) : Nombre total d'employés,
              * **marketCap (entier)** : Capitalisation boursière totale.
              """)
@@ -323,8 +334,13 @@ if page == pages[2]:
         'longBusinessSummary', 
         'fullTimeEmployees',
         'marketCap']
-    choix_info = st.selectbox('Choix du modèle :', variable_infos, key ='info_choice')
-    st.write(f'Le variable choisie est {choix_info}.')
+    choix_info = st.selectbox(
+        'Choix d\'une variable :',
+         variable_infos, 
+         key ='info_choice',
+        index=None,
+        placeholder="Sélectionner une variable...")
+    st.write('La variable choisie est ', choix_info, '.')
 
     if choix_info == 'country':
         df_country = stock_info['country'].value_counts().reset_index()
@@ -360,7 +376,7 @@ if page == pages[2]:
         
         st.write("""
                 Traitement des valeurs manquantes : Pas de valeurs manquantes
-                """)
+              """)
 
         st.write("""
                 Encodage : Catégories avec LabelEncoder()
@@ -432,6 +448,12 @@ if page == pages[2]:
 
         st.write("Nombre de modalités : ", df_new_industry['New Industry'].nunique())
 
+    if choix_info == 'longBusinessSummary':
+        st.write("La variable longBusinessSummary qui décrit l'activité de l'entreprise contient beaucoup d'information")
+
+
+
+
     disclaimer_display()
 
 # Machine Learning
@@ -446,134 +468,148 @@ if page == pages[4]:
 
     actions = [dico_isin_name[isin] for isin in data_2024.index.values]
 
-    action = st.selectbox('Choix de l\'action :', actions, key ='stock_choice')
-    st.write(f'L\'action choisi est {action}.')
+    action = st.selectbox(
+        'Choix de l\'action :', 
+        actions, 
+        key ='stock_choice',
+        index=None,
+        placeholder="Sélectionner une action...")
+    st.write('L\'action choisie est ', action, '.')
 
-    isin = dico_name_isin[action]['isin']
+    if action is not None:
+        
+        isin = dico_name_isin[action]['isin']
+        
+        st.table(stock_info.loc[isin, features])
+        st.write(stock_info.loc[isin, 'longBusinessSummary'])
+
+        st.subheader(f'Variation du cours de l\'action {action} en 2024')
+
+        ticker = dico_isin_ticker[isin]
+        cours = import_stock_data(ticker) 
+
+        try:
+            return_2024 = variation_calculation(cours)
+            st.write(f'{pd.Series(cours.index).dt.date.iloc[-1]} : {ticker}')
+            st.markdown(f'Le cours de l\'action {action} a varié de <span style="color:blue; font-weight:bold;">{round(return_2024 * 100, 2)}%</span> \
+                depuis le 1er janvier 2024.', unsafe_allow_html=True)
     
-    st.table(stock_info.loc[isin, features])
-    st.write(stock_info.loc[isin, 'longBusinessSummary'])
+            fig = px.line(
+                cours.reset_index(), x='Date', y=['Open', 'Close'],
+                title=f'Cours de l\'action {action}'
+                )
+            fig.add_vline(x='2024-01-01', line_width=3, line_dash="dash", line_color="black")
+        
+            st.plotly_chart(fig)
+        except Exception as e:
+            st.error(f"Erreur : {e}")
 
-    st.subheader(f'Variation du cours de l\'action {action} en 2024')
+        st.subheader(f'Prédiction pour l\'année 2024')
 
-    ticker = dico_isin_ticker[isin]
-    cours = import_stock_data(ticker) 
+        choix = ['Random Forest Classifier', 'Random Forest Regressor']
+        option = st.selectbox(
+            'Choix du modèle :', 
+            choix, 
+            key ='model_choice',
+            index=None,
+            placeholder="Sélectionner un modèle...")
+        st.write('Le modèle choisi est ', option, '.')
 
-    try:
-        return_2024 = variation_calculation(cours)
-        st.write(f'{pd.Series(cours.index).dt.date.iloc[-1]} : {ticker}')
-        st.markdown(f'Le cours de l\'action {action} a varié de <span style="color:blue; font-weight:bold;">{round(return_2024 * 100, 2)}%</span> \
-            depuis le 1er janvier 2024.', unsafe_allow_html=True)
-  
-        fig = px.line(
-            cours.reset_index(), x='Date', y=['Open', 'Close'],
-            title=f'Cours de l\'action {action}'
-            )
-        fig.add_vline(x='2024-01-01', line_width=3, line_dash="dash", line_color="black")
-    
-        st.plotly_chart(fig)
-    except Exception as e:
-        st.error(f"Erreur : {e}")
-
-    st.subheader(f'Prédiction pour l\'année 2024')
-
-    choix = ['Random Forest Classifier', 'Random Forest Regressor']
-    option = st.selectbox('Choix du modèle :', choix, key ='model_choice')
-    st.write(f'Le modèle choisi est {option}.')
-
-    modele = selection_model(option)
-
-    if option == 'Random Forest Classifier':
-        explainer = shap_object_reconstruction(shap_values_RFC_dict)
-        pred = modele.predict(data_2024[data_2024.index == isin])[0]
-        prob = modele.predict_proba(data_2024[data_2024.index == isin])[0,1]
-      
-        def generate_display_text(action, pred):
-            """
-            Génère le texte à afficher en fonction de la prédiction.
-            """
-            if pred >= 0:
-                color = 'green'
-            else:
-                color = 'red'
-
-            variation = {
-                0 : "négative",
-                1 : "positive"}
+        if option is not None:
             
-            return f"La variation du cours de l\'action {action} est prédite \
-                <span style='color:{color}; font-weight:bold;'>{variation[pred]}</span> \
-                avec une probabilité de \
-                <span style='color:{color}; font-weight:bold;'>{round(prob * 100, 1)}%</span>."
-        
+            modele = selection_model(option)
+
+            if option == 'Random Forest Classifier':
+                explainer = shap_object_reconstruction(shap_values_RFC_dict)
+                pred = modele.predict(data_2024[data_2024.index == isin])[0]
+                prob = modele.predict_proba(data_2024[data_2024.index == isin])[0,1]
+            
+                def generate_display_text(action, pred):
+                    """
+                    Génère le texte à afficher en fonction de la prédiction.
+                    """
+                    if pred >= 0:
+                        color = 'green'
+                    else:
+                        color = 'red'
+
+                    variation = {
+                        0 : "négative",
+                        1 : "positive"}
+                    
+                    return f"La variation du cours de l\'action {action} est prédite \
+                        <span style='color:{color}; font-weight:bold;'>{variation[pred]}</span> \
+                        avec une probabilité de \
+                        <span style='color:{color}; font-weight:bold;'>{round(prob * 100, 1)}%</span>."
                 
-        to_display = generate_display_text(action, pred)
-        st.write('La prédiction est réalisée sur la base des données de l\'année 2023.')
-        st.markdown(to_display, unsafe_allow_html=True)
+                        
+                to_display = generate_display_text(action, pred)
+                st.write('La prédiction est réalisée sur la base des données de l\'année 2023.')
+                st.markdown(to_display, unsafe_allow_html=True)
 
-        st.subheader('Interprétabilité SHAP de la prédiction')
+                st.subheader('Interprétabilité SHAP de la prédiction')
 
-        row_number = data_2024.index.get_loc(isin)
-        st.markdown('**Force Plot :**')
-        st_shap(shap.plots.force(explainer[..., 1][row_number]), height=150, width=1000)
-        st.markdown('**Waterfall :**')
-        st_shap(shap.plots.waterfall(explainer[..., 1][row_number]), height=500, width=1000)
+                row_number = data_2024.index.get_loc(isin)
+                st.markdown('**Force Plot :**')
+                st_shap(shap.plots.force(explainer[..., 1][row_number]), height=150, width=1000)
+                st.markdown('**Waterfall :**')
+                st_shap(shap.plots.waterfall(explainer[..., 1][row_number]), height=500, width=1000)
 
 
-    elif option == 'Random Forest Regressor':
-        explainer = shap_object_reconstruction(shap_values_RFR_dict)
-        pred = modele.predict(data_2024[data_2024.index == isin])[0]
-        
-        def generate_display_text(action, pred):
-            """
-            Génère le texte à afficher en fonction de la prédiction.
-            """
-            if pred >= 0:
-                color = 'green'
-            else:
-                color = 'red'
-            return f"La variation de cours prédite pour l'action {action} est \
-                <span style='color:{color}; font-weight:bold;'>{round(pred * 100, 1)}%</span>."
-        
-        to_display = generate_display_text(action, pred)
-        
-        st.write('La prédiction est réalisée sur la base des données de l\'année 2023.')
-        st.markdown(to_display, unsafe_allow_html=True)
+            elif option == 'Random Forest Regressor':
+                explainer = shap_object_reconstruction(shap_values_RFR_dict)
+                pred = modele.predict(data_2024[data_2024.index == isin])[0]
+                
+                def generate_display_text(action, pred):
+                    """
+                    Génère le texte à afficher en fonction de la prédiction.
+                    """
+                    if pred >= 0:
+                        color = 'green'
+                    else:
+                        color = 'red'
+                    return f"La variation de cours prédite pour l'action {action} est \
+                        <span style='color:{color}; font-weight:bold;'>{round(pred * 100, 1)}%</span>."
+                
+                to_display = generate_display_text(action, pred)
+                
+                st.write('La prédiction est réalisée sur la base des données de l\'année 2023.')
+                st.markdown(to_display, unsafe_allow_html=True)
 
-        st.subheader('Interprétabilité SHAP de la prédiction')
+                st.subheader('Interprétabilité SHAP de la prédiction')
 
-        row_number = data_2024.index.get_loc(isin)
-        st.markdown('**Force Plot :**')
-        st_shap(shap.plots.force(explainer[row_number]), height=150, width=1000)
-        st.markdown('**Waterfall :**')
-        st_shap(shap.plots.waterfall(explainer[row_number]), height=500, width=1000)
+                row_number = data_2024.index.get_loc(isin)
+                st.markdown('**Force Plot :**')
+                st_shap(shap.plots.force(explainer[row_number]), height=150, width=1000)
+                st.markdown('**Waterfall :**')
+                st_shap(shap.plots.waterfall(explainer[row_number]), height=500, width=1000)
 
-    st.text("")
-    st.text("")
-    st.markdown(
-        """
-        Les variables sont :
-        - **Return_n** : Variation du cours boursier en 2023.
-        - **country** : Pays.
-        - **new_industry** : Classification construite d'après le secteur d'activité et l'activité de la société.
-        - **exchange** : Place de cotation de la société.
-        - **fte_category** : TPE, PME, ETI, GE. 
-        - **cap_category** : Micro-Cap, Small-Cap, Mid-Cap, Large-Cap
-        - **businessClass** : Classification construite d'après la description de la société.
-        - **Total Revenue** : Chiffre d'affaires total généré par une entreprise à partir de ses activités principales.
-        - **Net Income** : Bénéfice net après déduction de toutes les charges, dépenses, impôts et intérêts.
-        - **EBITDA** : Bénéfices avant intérêts, impôts, dépréciation et amortissement, indiquant la rentabilité opérationnelle.
-        - **Basic EPS** : Bénéfice par action.
-        - **Operating Cash Flow** : Flux de trésorerie généré par les activités opérationnelles.
-        - **Free Cash Flow** : Flux de trésorerie disponible après les dépenses en capital et les investissements nécessaires.
-        - **Total Assets** : Somme de tous les actifs détenus par une entreprise.
-        - **Long Term Debt** : Dette financière à long terme.
-        - **Total Liabilities Net Minority Interest** : Total des passifs, y compris la dette et autres obligations.
-        - **Stockholders Equity** : Valeur nette des capitaux propres après remboursement de toutes les dettes.
-        
-        **Annual Variation** : Variation de la variable en 2023.
-        """
-        )
+            st.text("")
+            st.text("")
+            st.markdown(
+                """
+                Les variables sont :
+                - **Return_n** : Variation du cours boursier en 2023.
+                - **country** : Pays.
+                - **new_industry** : Classification construite d'après le secteur d'activité et l'activité de la société.
+                - **exchange** : Place de cotation de la société.
+                - **fte_category** : TPE, PME, ETI, GE. 
+                - **cap_category** : Micro-Cap, Small-Cap, Mid-Cap, Large-Cap
+                - **businessClass** : Classification construite d'après la description de la société.
+                - **Total Revenue** : Chiffre d'affaires total généré par une entreprise à partir de ses activités principales.
+                - **Net Income** : Bénéfice net après déduction de toutes les charges, dépenses, impôts et intérêts.
+                - **EBITDA** : Bénéfices avant intérêts, impôts, dépréciation et amortissement, indiquant la rentabilité opérationnelle.
+                - **Basic EPS** : Bénéfice par action.
+                - **Operating Cash Flow** : Flux de trésorerie généré par les activités opérationnelles.
+                - **Free Cash Flow** : Flux de trésorerie disponible après les dépenses en capital et les investissements nécessaires.
+                - **Total Assets** : Somme de tous les actifs détenus par une entreprise.
+                - **Long Term Debt** : Dette financière à long terme.
+                - **Total Liabilities Net Minority Interest** : Total des passifs, y compris la dette et autres obligations.
+                - **Stockholders Equity** : Valeur nette des capitaux propres après remboursement de toutes les dettes.
+                
+                **Annual Variation** : Variation de la variable en 2023.
+                """
+                )
 
     disclaimer_display()
 
@@ -583,140 +619,152 @@ if page == pages[5]:
 
     st.subheader("Sélection du modèle")
     choix_2 = ['Random Forest Classifier', 'Random Forest Regressor', 'Mixte']
-    option_2 = st.selectbox('Choix du modèle :', choix_2, key ='model_choice')
-    st.write(f'Le modèle choisi est {option_2}.')
+    option_2 = st.selectbox(
+        'Choix du modèle :', 
+        choix_2, 
+        key ='model_choice',
+        index=None,
+        placeholder="Sélectionner une modèle...")
+    st.write('Le modèle choisi est ', option_2, '.')
 
-    if option_2 != "Mixte":
-        modele = selection_model(option_2)
+    if option_2 is not None:
 
-    init_nb_action = 25
+        if option_2 != "Mixte":
+            modele = selection_model(option_2)
 
-    nb_action = st.slider(
-        'Nombre d\'actions :',
-        min_value=1,
-        max_value=100,
-        value=init_nb_action
-        )
-    
-    if option_2 == 'Random Forest Classifier':
-        probs = modele.predict_proba(data_2024)
+        init_nb_action = 25
+
+        nb_action = st.slider(
+            'Nombre d\'actions :',
+            min_value=1,
+            max_value=100,
+            value=init_nb_action
+            )
         
-        df_predicted = pd.concat(
-            [
-                data_2024,
-                pd.DataFrame(probs[:,1], index=data_2024.index, columns=['Probabilité'])
-                ],
-                axis=1
-                )
-        
-
-        df_predicted['Nom'] = df_predicted.index.map(dico_isin_name)
-        df_predicted['Ticker'] = df_predicted.index.map(dico_isin_ticker)
-    
-        portfolio = df_predicted.sort_values(by='Probabilité', ascending=False)
-        portfolio = portfolio.set_index('Nom')
-        portfolio = portfolio.head(nb_action)
-        st.table(portfolio[['Ticker','Probabilité']].head(nb_action))
-
-    elif option_2 == 'Random Forest Regressor':
-        y_pred = modele.predict(data_2024)  
-    
-        df_predicted = pd.concat(
-            [
-                data_2024,
-                pd.DataFrame(y_pred, index=data_2024.index, columns=['Variation'])
-                ],
-                axis=1
-                )
-        
-        df_predicted['Nom'] = df_predicted.index.map(dico_isin_name)
-        df_predicted['Ticker'] = df_predicted.index.map(dico_isin_ticker)
-    
-        portfolio = df_predicted.sort_values(by='Variation', ascending=False)
-        portfolio = portfolio.set_index('Nom')
-        portfolio = portfolio.head(nb_action)
-        st.table(portfolio[['Ticker','Variation']].head(nb_action))
-    
-    elif option_2 == 'Mixte':
-        probs = rfc.predict_proba(data_2024)
-        y_pred = rfr.predict(data_2024)
-
-        combine = np.sqrt(probs[:,1] * probs[:,1] + y_pred * y_pred)
-
-        df_predicted = pd.concat(
-            [
-                data_2024,
-                pd.DataFrame(combine, index=data_2024.index, columns=['Norme L2'])
-                ],
-                axis=1
-                )
-        
-        df_predicted['Nom'] = df_predicted.index.map(dico_isin_name)
-        df_predicted['Ticker'] = df_predicted.index.map(dico_isin_ticker)
-    
-        portfolio = df_predicted.sort_values(by='Norme L2', ascending=False)
-        portfolio = portfolio.set_index('Nom')
-        portfolio = portfolio.head(nb_action)
-        st.table(portfolio[['Ticker','Norme L2']].head(nb_action))
-    
-
-    selected_rows = []
-
-    with st.expander("Sélection d'un panier d'actions"):
-        st.write("Cochez les actions et sélectionnez")
-
-        for i, nom in enumerate(portfolio.index.values):
-            if st.checkbox(
-                f"{portfolio.loc[portfolio.index == nom].index.values[0]}",
-                key=i,
-                value=nom in selected_rows
-                ):
-                selected_rows.append(nom)
-
-        st.write("Nombre d'actions retenues :", len(selected_rows))
-        
-    if selected_rows:
-        selected_portfolio = portfolio[portfolio.index.isin(selected_rows)]
-    else:
-        selected_portfolio = portfolio
-
-    gains, tickers, warnings = gain_calculation(selected_portfolio['Ticker'].to_list())
-
-    st.subheader("Sélection de la stratégie")
-    strategies = [
-        'Portefeuille équipondéré',
-        'Portefeuille pondéré'
-        ]
-    strategie = st.selectbox('Choix de la stratégie :', strategies, key ='strategie_choice')
-    st.write(f'La stratégie choisie est {strategie}.')
-
-    def generate_display_text_2(performance):
-        """
-        Génère le texte à afficher en fonction de la performance
-        """
-        if performance >= 0:
-            color = 'green'
-        else:
-            color = 'red'
+        if option_2 == 'Random Forest Classifier':
+            probs = modele.predict_proba(data_2024)
             
-        return f"<span style='color:{color}; font-weight:bold;'>{round(performance * 100, 2)}%</span>"            
-                    
-    if strategie == 'Portefeuille équipondéré':
-        performance_pe = strategie_1(gains)
-        perf_display_pe = generate_display_text_2(performance_pe)
-        st.markdown(f"Depuis le 1er janvier 2024, la performance avec un portefeuille équipondéré \
-                    de {len(gains)} actions est de " + perf_display_pe +".", unsafe_allow_html=True)
+            df_predicted = pd.concat(
+                [
+                    data_2024,
+                    pd.DataFrame(probs[:,1], index=data_2024.index, columns=['Probabilité'])
+                    ],
+                    axis=1
+                    )
 
-    elif strategie == 'Portefeuille pondéré':
-        if option_2 == 'Random Forest Classifier':         
-            performance_pp = strategie_2(gains, tickers, selected_portfolio.rename(columns={'Probabilité' : 'Pred'}))
+            df_predicted['Nom'] = df_predicted.index.map(dico_isin_name)
+            df_predicted['Ticker'] = df_predicted.index.map(dico_isin_ticker)
+        
+            portfolio = df_predicted.sort_values(by='Probabilité', ascending=False)
+            portfolio = portfolio.set_index('Nom')
+            portfolio = portfolio.head(nb_action)
+            st.table(portfolio[['Ticker','Probabilité']].head(nb_action))
+
         elif option_2 == 'Random Forest Regressor':
-            performance_pp = strategie_2(gains, tickers, selected_portfolio.rename(columns={'Variation' : 'Pred'}))
+            y_pred = modele.predict(data_2024)  
+        
+            df_predicted = pd.concat(
+                [
+                    data_2024,
+                    pd.DataFrame(y_pred, index=data_2024.index, columns=['Variation'])
+                    ],
+                    axis=1
+                    )
+            
+            df_predicted['Nom'] = df_predicted.index.map(dico_isin_name)
+            df_predicted['Ticker'] = df_predicted.index.map(dico_isin_ticker)
+        
+            portfolio = df_predicted.sort_values(by='Variation', ascending=False)
+            portfolio = portfolio.set_index('Nom')
+            portfolio = portfolio.head(nb_action)
+            st.table(portfolio[['Ticker','Variation']].head(nb_action))
+        
         elif option_2 == 'Mixte':
-            performance_pp = strategie_2(gains, tickers, selected_portfolio.rename(columns={'Norme L2' : 'Pred'}))       
-        perf_display_pp = generate_display_text_2(performance_pp)
-        st.markdown(f"Depuis le 1er janvier 2024, la performance avec un portefeuille de {len(gains)} actions pondéré \
-                    est de " + perf_display_pp +".", unsafe_allow_html=True)
+            probs = rfc.predict_proba(data_2024)
+            y_pred = rfr.predict(data_2024)
+
+            combine = np.sqrt(probs[:,1] * probs[:,1] + y_pred * y_pred)
+
+            df_predicted = pd.concat(
+                [
+                    data_2024,
+                    pd.DataFrame(combine, index=data_2024.index, columns=['Norme L2'])
+                    ],
+                    axis=1
+                    )
+            
+            df_predicted['Nom'] = df_predicted.index.map(dico_isin_name)
+            df_predicted['Ticker'] = df_predicted.index.map(dico_isin_ticker)
+        
+            portfolio = df_predicted.sort_values(by='Norme L2', ascending=False)
+            portfolio = portfolio.set_index('Nom')
+            portfolio = portfolio.head(nb_action)
+            st.table(portfolio[['Ticker','Norme L2']].head(nb_action))
+
+        selected_rows=[]
+        
+        with st.expander("Sélection d'un panier d'actions"):
+            st.write("Cochez les actions et sélectionnez")
+
+            for i, nom in enumerate(portfolio.index.values):
+                if st.checkbox(
+                    f"{portfolio.loc[portfolio.index == nom].index.values[0]}",
+                    key=i,
+                    value=nom in selected_rows
+                    ):
+                    selected_rows.append(nom)
+
+            st.write("Nombre d'actions retenues :", len(selected_rows))
+            
+        if selected_rows:
+            selected_portfolio = portfolio[portfolio.index.isin(selected_rows)]
+        else:
+            selected_portfolio = portfolio
+
+        gains, tickers, warnings = gain_calculation(selected_portfolio['Ticker'].to_list())
+
+        st.subheader("Sélection de la stratégie")
+        strategies = [
+            'Portefeuille équipondéré',
+            'Portefeuille pondéré'
+            ]
+        strategie = st.selectbox(
+            'Choix de la stratégie :', 
+            strategies, 
+            key ='strategie_choice',
+            index=None,
+            placeholder="Sélectionner une stratégie...")
+        st.write('La stratégie choisie est ', strategie,'.')
+
+        if strategie is not None:
+
+            def generate_display_text_2(performance):
+                """
+                Génère le texte à afficher en fonction de la performance
+                """
+                if performance >= 0:
+                    color = 'green'
+                else:
+                    color = 'red'
+                    
+                return f"<span style='color:{color}; font-weight:bold;'>{round(performance * 100, 2)}%</span>"            
+                            
+            if strategie == 'Portefeuille équipondéré':
+                performance_pe = strategie_1(gains)
+                perf_display_pe = generate_display_text_2(performance_pe)
+                st.markdown(f"Depuis le 1er janvier 2024, la performance avec un portefeuille équipondéré \
+                            de {len(gains)} actions est de " + perf_display_pe +".", unsafe_allow_html=True)
+
+            elif strategie == 'Portefeuille pondéré':
+                if option_2 == 'Random Forest Classifier':         
+                    performance_pp = strategie_2(gains, tickers, selected_portfolio.rename(columns={'Probabilité' : 'Pred'}))
+                elif option_2 == 'Random Forest Regressor':
+                    performance_pp = strategie_2(gains, tickers, selected_portfolio.rename(columns={'Variation' : 'Pred'}))
+                elif option_2 == 'Mixte':
+                    performance_pp = strategie_2(gains, tickers, selected_portfolio.rename(columns={'Norme L2' : 'Pred'}))       
+                perf_display_pp = generate_display_text_2(performance_pp)
+                st.markdown(f"Depuis le 1er janvier 2024, la performance avec un portefeuille de {len(gains)} actions pondéré \
+                            est de " + perf_display_pp +".", unsafe_allow_html=True)
 
     st.text("")
     st.text("")
@@ -726,6 +774,19 @@ if page == pages[5]:
 
     for i, indice in enumerate(ref_tickers):
         st.write(f"{indices_reference[indice]} : {round(references[i] * 100,2)}%")
+
+    st.text("")
+    st.text("")
+    st.markdown("*_Dummy strategy :_*")
+    try:
+        # Dummy Strategy
+        if selected_rows:
+            gains_dummy, tickers_dummy, warnings_dummy = gain_calculation(df_predicted['Ticker'].sample(len(selected_rows)).to_list())
+        else:
+            gains_dummy, tickers_dummy, warnings_dummy = gain_calculation(df_predicted['Ticker'].sample(len(portfolio)).to_list())
+        st.write(f"_Dummy strategy : {round(strategie_1(gains_dummy) * 100,2)}% avec une liste aléatoire de {len(gains_dummy)} actions équipondérées._")
+    except Exception as e:
+        pass
 
     disclaimer_display()
 
