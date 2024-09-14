@@ -16,6 +16,7 @@ import seaborn as sns
 DataScientest = """https://datascientest.com/"""
 rfc_file = '20240909_Classifier_RFC.joblib'
 rfr_file = '20240909_Regressor_RFR.joblib'
+stock_data_file = '20240719_df_v2.csv'
 data_2024_file = 'preprocessed_data_2024.csv'
 stock_info_file = '20240423_PEA_stocks_info.csv'
 dico_name_isin_file = 'dictionnaire_nom_isin.json'
@@ -144,6 +145,8 @@ def strategie_2(gains, tickers, portfolio):
 data_2024 = read_df(data_2024_file)
 
 stock_info = read_df(stock_info_file)
+
+stock_data = read_df(stock_data_file)
 
 rfc = load_model(rfc_file)
 rfr = load_model(rfr_file)
@@ -305,8 +308,8 @@ if page == pages[2]:
              * **name** (chaîne de caractères) : Nom de la société,
              * **country** (catégories) : Pays de la société,
              * **exchange** (catégories) : Place de cotation,
-             * **industry** (catégories) : Secteur économique de l'entreprise.
-             * **sector** (catégories) : Catégorie économique plus large.
+             * **sector** (catégories) : Secteur économique,
+             * **industry** (catégories) : Catégorie industrielle,
              * **longBusinessSummary** (chaîne de caractères) : Description détaillée des activités commerciales,
              * **fullTimeEmployees** (entier) : Nombre total d'employés,
              * **marketCap (entier)** : Capitalisation boursière totale.
@@ -334,7 +337,7 @@ if page == pages[2]:
 
         st.write("""
                 Traitement des valeurs manquantes : à partir des deux premières lettres des codes ISIN.
-                Par exemple, **FR**0000131906 : France, **PL**PKN0000018 : Pologne.
+                Par exemple, **FR**0000131906 : France, **PL**PKN0000018 : Pologne
                 """)
         
         st.write("Les pays non éligibles ont été retirés du dataset.")
@@ -342,6 +345,8 @@ if page == pages[2]:
         st.write("""
                 Encodage : Catégories avec LabelEncoder()
                 """)
+        
+        st.write("Nombre de modalités : ", df_country['Pays'].nunique())
         
     if choix_info == 'exchange':
         df_exchange = stock_info['exchange'].map(dico_exchange).value_counts().reset_index()
@@ -352,7 +357,7 @@ if page == pages[2]:
         plt.xticks(ticks=range(0, df_exchange['Actions'].max()+1, 50))
         plt.title("Les 20 principales places de cotation")
         st.pyplot(plt)
-
+        
         st.write("""
                 Traitement des valeurs manquantes : Pas de valeurs manquantes
                 """)
@@ -360,13 +365,15 @@ if page == pages[2]:
         st.write("""
                 Encodage : Catégories avec LabelEncoder()
                 """)
+        
+        st.write("Nombre de modalités : ", df_exchange['Place de cotation'].nunique())
 
         st.warning("""Les places boursières non éligibles au PEA non pas été éliminées du dataset. Par exemple : Londres et New-York.
                    """)
 
-        print(df_exchange)
-
     if choix_info == 'industry et sector':
+        
+        # Secteur économique
         df_sector = stock_info['sector'].value_counts().reset_index()
         df_sector.columns = ['Secteur économique', 'Actions']
         plt.figure(figsize=(10,6))
@@ -376,13 +383,54 @@ if page == pages[2]:
         st.pyplot(plt)
 
         st.write("""
-                Traitement des valeurs manquantes : à partir des deux premières lettres des codes ISIN.
-                Par exemple, **FR**0000131906 : France, **PL**PKN0000018 : Pologne.
+                Traitement des valeurs manquantes : Création d'une catégorie 'Not Defined or Others'
                 """)
 
         st.write("""
                 Encodage : Catégories avec LabelEncoder()
                 """)
+        
+        st.write("Nombre de modalités : ", df_sector['Secteur économique'].nunique())
+        
+        #  Catégorie industrielle
+        df_industry = stock_info['industry'].value_counts().reset_index()
+        df_industry.columns = ['Catégorie industrielle', 'Actions']
+        plt.figure(figsize=(10,6))
+        sns.barplot(data=df_industry.head(20), x='Actions', y='Catégorie industrielle', hue='Catégorie industrielle', orient='h')
+        plt.xticks(ticks=range(0, df_industry['Actions'].max()+1, 50))
+        plt.title("Les 20 premières catégories industrielles")
+        st.pyplot(plt)
+
+        st.write("""
+                Traitement des valeurs manquantes : Création d'une catégorie 'Not Defined or Others'
+                """)
+
+        st.write("""
+                Encodage : Catégories avec LabelEncoder()
+                """)
+         
+        st.write("Nombre de modalités : ", df_industry['Catégorie industrielle'].nunique())
+
+        # Catégorie new_industry
+        st.subheader("Création d'une nouvelle variable 'new_industry'")
+        st.write("""
+                La catégorie industrielle est une subdivision des secteurs économiques.
+                Les deux variables sont corrélées.
+                """)
+
+        st.write("""
+                Création d'une nouvelle variable 'new_industry' proposant plus de modalités que la variable Secteur économique 
+                en combinant les modalités Catégorie industrielle par Secteur industrielle.
+                """)
+
+        df_new_industry = stock_data.copy().rename(columns={'new_industry' : 'New Industry'})
+        plt.figure(figsize=(10,6))
+        palette = sns.color_palette("hls", len(df_new_industry['New Industry'].unique()))
+        sns.countplot(data=df_new_industry, x='New Industry', hue='New Industry', palette=palette, legend=False)
+        plt.title("Variable New Industry")
+        st.pyplot(plt)
+
+        st.write("Nombre de modalités : ", df_new_industry['New Industry'].nunique())
 
     disclaimer_display()
 
