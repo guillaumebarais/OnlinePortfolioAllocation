@@ -23,6 +23,9 @@ dico_name_isin_file = 'dictionnaire_nom_isin.json'
 dico_isin_name_file = 'dictionnaire_isin_nom.json'
 dico_isin_ticker_file = 'dictionnaire_isin_ticker.json'
 dico_exchange_file = 'dictionnaire_exchange.json'
+lemmatizer_pic_file = 'lemmatization.jpg'
+vectorizer_pic_file = 'vectorization.jpg'
+CAH_dendogramme_file = 'CAH_dendogramme.jpg'
 explainer_shap_RFC_file = 'explainer_shap_RFC.json'
 explainer_shap_RFR_file = 'explainer_shap_RFR.json'
 today = date.today()
@@ -160,6 +163,8 @@ with open(dico_isin_name_file, 'r') as f:
 with open(dico_isin_ticker_file, 'r') as f:
     dico_isin_ticker = json.load(f)
 
+dico_ticker_isin = {v : k for k , v in dico_isin_ticker.items()}    
+
 with open(dico_exchange_file, 'r') as f:
     dico_exchange = json.load(f)
 
@@ -262,7 +267,7 @@ if page == pages[1]:
 
     st.write("La librairie Python [yfinance](https://github.com/ranaroussi/yfinance) a été utilisée pour accéder aux données du site [Yahoo Finance](https://finance.yahoo.com/).")
     st.write("Les données, comprenant 486 variables et couvrant 4657 sociétés sur la période de 2020 à 2024, occupent un espace de 1,75 Go.")
-    st.write("__Exemple de données pour Renault SaS (ISIN FR0000131906) :__")
+    st.write("__Exemple de données :__")
     
     all_actions = [dico_isin_name[isin] for isin in stock_info.index.values]
     selected_action = st.selectbox(
@@ -439,7 +444,9 @@ if page == pages[2]:
                 en combinant les modalités Catégorie industrielle par Secteur industrielle.
                 """)
 
-        df_new_industry = stock_data.copy().rename(columns={'new_industry' : 'New Industry'})
+        df_new_industry = stock_data.copy()
+        df_new_industry = df_new_industry[~df_new_industry.index.duplicated(keep='first')]
+        df_new_industry = df_new_industry.rename(columns={'new_industry' : 'New Industry'})
         plt.figure(figsize=(10,6))
         palette = sns.color_palette("hls", len(df_new_industry['New Industry'].unique()))
         sns.countplot(data=df_new_industry, x='New Industry', hue='New Industry', palette=palette, legend=False)
@@ -449,7 +456,58 @@ if page == pages[2]:
         st.write("Nombre de modalités : ", df_new_industry['New Industry'].nunique())
 
     if choix_info == 'longBusinessSummary':
-        st.write("La variable longBusinessSummary qui décrit l'activité de l'entreprise contient beaucoup d'information")
+        st.write("La variable longBusinessSummary décrivant l'activité de l'entreprise contient de nombreuses informations.")
+
+        st.text("Exemples de description :")
+        st.dataframe(stock_info[['longName','longBusinessSummary']].sample(5))
+            
+        st.write("""
+                Une façon d'exploiter ces informations est de créer une nouvelle variable catégorielle en regroupant les 
+                sociétes dont les descriptions sont les plus proches.
+                """)
+
+        st.write("""
+                Méthodologie :  
+                * Tokenisation (_word_tokenize()_)  
+                    * Suppression stopwords, nombres et dates par regex  
+                    * Suppression nom du pays en fin de description (présent dans la variable 'country')  
+                * Lemmatisation (_WordNetLemmatizer()_)  
+                """)
+
+        st.image(lemmatizer_pic_file, use_column_width=True)
+
+        st.write("""  
+            * Vectorisation (_TfidfVectorizer()_)  
+            * Calcul du matrice de similarité (_cosine_similarity()_)
+            """)
+
+        st.image(vectorizer_pic_file, use_column_width=True)
+        
+        st.write("""
+                * Hierarchical Clustering (_AgglomerativeClustering()_) : 
+                Regroupement non supervisé des entreprise par similitude permettant de créer une nouvelle feature 'businessClass'
+                """)
+
+        #  Catégorie industrielle
+        df_business = stock_data.copy()
+        df_business = df_business[~df_business.index.duplicated(keep='first')]
+        df_business = df_business.rename(columns={'businessClass': 'Business Class'})
+        plt.figure(figsize=(10,6))
+        palette = sns.color_palette("hls", len(df_business['Business Class'].unique()))
+        sns.countplot(data=df_business, x='Business Class', hue='Business Class', palette=palette, legend=False)
+        plt.title("Variable Business Class")
+        st.pyplot(plt)
+        
+        st.write("""
+                Traitement des valeurs manquantes : associées à une classe lors du clustering non supervisé
+                """)
+         
+        st.write("Nombre de modalités : ", df_business['Business Class'].nunique())
+
+
+
+
+
 
 
 
@@ -704,7 +762,7 @@ if page == pages[5]:
         selected_rows=[]
         
         with st.expander("Sélection d'un panier d'actions"):
-            st.write("Cochez les actions et sélectionnez")
+            st.write("Cochez les actions...")
 
             for i, nom in enumerate(portfolio.index.values):
                 if st.checkbox(
@@ -784,7 +842,9 @@ if page == pages[5]:
             gains_dummy, tickers_dummy, warnings_dummy = gain_calculation(df_predicted['Ticker'].sample(len(selected_rows)).to_list())
         else:
             gains_dummy, tickers_dummy, warnings_dummy = gain_calculation(df_predicted['Ticker'].sample(len(portfolio)).to_list())
-        st.write(f"_Dummy strategy : {round(strategie_1(gains_dummy) * 100,2)}% avec une liste aléatoire de {len(gains_dummy)} actions équipondérées._")
+        st.write(f"_Performance de {round(strategie_1(gains_dummy) * 100,2)}% avec une liste aléatoire de {len(gains_dummy)} actions équipondérées._")
+        
+        st.write(f"_Liste des actions : {', '.join([dico_isin_name[dico_ticker_isin[ticker]] for ticker in tickers_dummy])}_")
     except Exception as e:
         pass
 
