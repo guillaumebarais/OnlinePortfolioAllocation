@@ -484,8 +484,9 @@ if page == pages[2]:
         st.image(vectorizer_pic_file, use_column_width=True)
         
         st.write("""
-                * Hierarchical Clustering (_AgglomerativeClustering()_) : 
-                Regroupement non supervisé des entreprise par similitude permettant de créer une nouvelle feature 'businessClass'
+                * Hierarchical Clustering (_AgglomerativeClustering()_) :  
+                    * Regroupement non supervisé des entreprise par similitude permettant de créer une nouvelle feature 'businessClass'  
+                    * Meilleur compromis d'après le score de silhouette et le score de Calinski-Harabasz (elbow method) : 10 clusters
                 """)
 
         #  Catégorie industrielle
@@ -503,6 +504,28 @@ if page == pages[2]:
                 """)
          
         st.write("Nombre de modalités : ", df_business['Business Class'].nunique())
+
+        df_business = pd.merge(
+            left=df_business.reset_index(),
+            right=stock_info.reset_index(),
+            on='isin', how='inner').set_index('isin')
+
+        all_actions = [dico_isin_name[isin] for isin in stock_info.index.values]
+        
+        selected_for_business = st.selectbox(
+            'Choix de l\'action',
+            all_actions,
+            key ='all_business_class',
+            index=None,
+            placeholder="Sélectionner une action...")
+        st.write('L\'action choisie est ', selected_for_business, '.')
+
+        if selected_for_business is not None:
+            st.dataframe(
+                df_business.loc[dico_name_isin[selected_for_business]['isin'], ['longName', 'Business Class', 'longBusinessSummary']],
+                use_container_width=True)
+
+        
 
 
 
