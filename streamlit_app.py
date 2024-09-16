@@ -707,13 +707,30 @@ if page == pages[2]:
 
         st.dataframe(result, use_container_width=True)
 
-        fig, ax = plt.subplots()
-        palette = sns.color_palette("hls", len(df_feature['year'].unique()))
-        sns.boxplot(data=df_feature, x='year', y=df_feature[feature] * 1e-6, hue='year', palette=palette, ax=ax)
-        ax.set_yscale('symlog')
-        ax.set_ylabel(f'{feature} (million d\'euros)')
-        ax.set_title(f"Distribution de {feature}")
-        st.pyplot(fig, use_container_width=True)
+        if feature == 'Basic EPS':
+            fig, ax = plt.subplots()
+            palette = sns.color_palette("hls", len(df_feature['year'].unique()))
+            sns.boxplot(data=df_feature, x='year', y=df_feature[feature], hue='year', palette=palette, ax=ax)
+            ax.set_ylim(-3, 3)
+            ax.set_ylabel(f'{feature} (euros)')
+            ax.set_title(f"Distribution de {feature}")
+            st.pyplot(fig, use_container_width=True)
+        elif feature == 'Long Term Debt':
+            fig, ax = plt.subplots()
+            palette = sns.color_palette("hls", len(df_feature['year'].unique()))
+            sns.boxplot(data=df_feature, x='year', y=df_feature[feature] * 1e-6, hue='year', palette=palette, ax=ax)
+            ax.set_yscale('log')
+            ax.set_ylabel(f'{feature} (million d\'euros)')
+            ax.set_title(f"Distribution de {feature}")
+            st.pyplot(fig, use_container_width=True)
+        else:
+            fig, ax = plt.subplots()
+            palette = sns.color_palette("hls", len(df_feature['year'].unique()))
+            sns.boxplot(data=df_feature, x='year', y=df_feature[feature] * 1e-6, hue='year', palette=palette, ax=ax)
+            ax.set_yscale('symlog')
+            ax.set_ylabel(f'{feature} (million d\'euros)')
+            ax.set_title(f"Distribution de {feature}")
+            st.pyplot(fig, use_container_width=True)
 
         st.write(f"""
                 Nouvelle variable : **'{feature} : Annual Variation'**  
@@ -751,13 +768,22 @@ if page == pages[2]:
                 )
 
         st.write("")
-        st.write(f"""
-        Traitement des valeurs manquantes de '{feature}' et '{feature} : Annual Variation' :  
-        * KNNimputer()
-        * Exceptés :
-            * 'Basic EPS' et 'Basic EPS : Annual Variation', remplacement des valeurs non documentées par 0 (hypothèse pas de bénéfices)
-            * 'Long Term Debt' et 'Long Term Debt : Annual Variation', remplacement des valeurs non documentées par 0 (hypothèse sociétés non endettées)
-        """)
+        
+        if feature == 'Basic EPS':
+            st.write(f"""
+                    Traitement des valeurs manquantes de 'Basic EPS' et 'Basic EPS : Annual Variation' : 
+                    * Remplacement des valeurs non documentées par 0 (hypothèse pas de bénéfices)
+                    """)
+        elif feature == 'Long Term Debt':
+            st.write(f"""
+                    Traitement des valeurs manquantes de 'Long Term Debt' et 'Long Term Debt : Annual Variation' :   
+                    * Remplacement des valeurs non documentées par 0 (hypothèse sociétés non endettées)
+                    """)     
+        else:
+            st.write(f"""
+                    Traitement des valeurs manquantes de '{feature}' et '{feature} : Annual Variation' :  
+                    * KNNimputer()
+                    """)
 
     if choix_info == 'Total Revenue':
         display_feature(choix_info)
