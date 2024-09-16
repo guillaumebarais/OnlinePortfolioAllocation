@@ -19,6 +19,7 @@ rfr_file = '20240909_Regressor_RFR.joblib'
 stock_data_file = '20240719_df_v2.csv'
 data_2024_file = 'preprocessed_data_2024.csv'
 stock_info_file = '20240423_PEA_stocks_info.csv'
+reference_finale_file = 'Reference_finale.csv'
 dico_name_isin_file = 'dictionnaire_nom_isin.json'
 dico_isin_name_file = 'dictionnaire_isin_nom.json'
 dico_isin_ticker_file = 'dictionnaire_isin_ticker.json'
@@ -60,8 +61,8 @@ def disclaimer_display(disclaimer=disclaimer):
 
 @st.cache_resource
 def read_df(file):
-     df = pd.read_csv(file, index_col='isin')
-     return df
+    df = pd.read_csv(file, index_col='isin')
+    return df
 
 @st.cache_resource
 def load_model(model_file):
@@ -150,6 +151,8 @@ data_2024 = read_df(data_2024_file)
 stock_info = read_df(stock_info_file)
 
 stock_data = read_df(stock_data_file)
+
+reference_finale = read_df(reference_finale_file)
 
 rfc = load_model(rfc_file)
 rfr = load_model(rfr_file)
@@ -346,6 +349,15 @@ if page == pages[2]:
             * **Stockholders Equity (float)** : La valeur nette des capitaux propres d'une entreprise après le remboursement de toutes les dettes.
              """)
 
+    st.subheader('Données boursières')
+    st.write("""
+            2 variables sont créés à partir du cours boursier :  
+            * **Return_N** (float) : Variation en pourcentage entre le cours d'ouverture du premier jour suivant la clôture des résultats de l'année N-1  
+            et le cours de clôture du dernier jour de cotation précédant la clôture des résultats de l'année N.  
+            * **Return_N+1** (float) : **Variable cible**, variation en pourcentage entre le cours d'ouverture du premier jour suivant la clôture des résultats de l'année N  
+            et le cours de clôture du dernier jour de cotation précédant la clôture des résultats de l'année N+1.
+            """)
+
     st.subheader("Sélection de la variable à visualiser")
     variable_infos = [
         'country', 
@@ -363,7 +375,8 @@ if page == pages[2]:
         'Total Assets',
         'Long Term Debt',
         'Total Liabilities Net Minority Interest',
-        'Stockholders Equity'
+        'Stockholders Equity',
+        'Return'
         ]
 
     choix_info = st.selectbox(
@@ -712,6 +725,7 @@ if page == pages[2]:
             palette = sns.color_palette("hls", len(df_feature['year'].unique()))
             sns.boxplot(data=df_feature, x='year', y=df_feature[feature], hue='year', palette=palette, ax=ax)
             ax.set_ylim(-3, 3)
+            ax.set_xlabel("Année")
             ax.set_ylabel(f'{feature} (euros)')
             ax.set_title(f"Distribution de {feature}")
             st.pyplot(fig, use_container_width=True)
@@ -815,11 +829,119 @@ if page == pages[2]:
     if choix_info == 'Stockholders Equity':
         display_feature(choix_info)
 
+    if choix_info == 'Return':
+        df_return = stock_data[~(stock_data['year'] == 2024)].copy()
+        
+        describe = []
+        for year in sorted(df_return['year'].unique()):
+            stats = df_return.loc[df_return['year'] == year, ['Return_n']].describe()
+            stats = stats.rename(columns={'Return_n': f'Return_n {year}'})
+            describe.append(stats)
+
+        result = pd.concat(describe, axis=1)
+
+        st.dataframe(result, use_container_width=True)
+
+        fig, ax = plt.subplots()    
+        palette = sns.color_palette("hls", len(df_return['year'].unique()))
+        sns.boxplot(data=df_return, x='year', y='Return_n', hue='year', palette=palette, showmeans=True, ax=ax)
+        ax.set_ylim([-1.5, 5])
+        ax.set_yticks(np.arange(-1.5, 5.5, 0.5))
+        ax.set_xlabel("Année")
+        ax.set_ylabel("Variation des cours par rapport à l'année précédente (%)")
+        ax.set_title("Variation des cours boursiers par année")
+        st.pyplot(fig, use_container_width=True)
+
+        st.write("""Les marchés financiers sont sensibles à des facteurs exogènes comme des évènements géopolitiques ou économiques.  
+                 Pour limiter l'impact de ces facteurs exogènes, les variations sont recalées pour avoir une moyenne nulle. 
+                 Les années deviennent comparables en moyenne. 
+                 """)
+        
+        st.markdown(r"""
+                    Les marchés ont été très volatils en 2021 et 2022. 
+                    Les performances les plus extrêmes, qu'elles soient à la hausse ou à la baisse, peuvent être considérées comme des valeurs aberrantes. 
+                    Ces performances extrêmes sont plafonnées à 1,5 fois l'intervalle interquartile :    
+                    $$1.5 \times IQR \, (Q3 - Q1)$$.
+                    """)
+        
+        st.write("Après traitement :")
+
+        df_return_2 = reference_finale[~(reference_finale['year'] == 2024)].copy()
+
+        fig_2, ax_2 = plt.subplots()    
+        palette = sns.color_palette("hls", len(df_return['year'].unique()))
+        sns.boxplot(data=df_return_2, x='year', y='Return_n', hue='year', palette=palette, showmeans=True, ax=ax_2)
+        ax_2.set_ylim([-1.5, 5])
+        ax_2.set_yticks(np.arange(-1.5, 5.5, 0.5))
+        ax_2.set_xlabel("Année")
+        ax_2.set_ylabel("Variation des cours par rapport à l'année précédente (%)")
+        ax_2.set_title("Après pré-traitement : Variation des cours boursiers par année")
+        st.pyplot(fig_2, use_container_width=True)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        # df_return = reference_finale[~(reference_finale['year'] == 2024)].copy()
+
+        # fig_2, ax_2 = plt.subplots()    
+        # palette = sns.color_palette("hls", len(df_return['year'].unique()))
+        # sns.boxplot(data=df_return, x='year', y='Return_n', hue='year', palette=palette, showmeans=True, ax=ax_2)
+        # ax_2.set_ylim([-1.5, 5])
+        # ax_2.set_yticks(np.arange(-1.5, 5.5, 0.5))
+        # ax_2.set_xlabel("Année")
+        # ax_2.set_ylabel("Variation des cours par rapport à l'année précédente (%)")
+        # ax_2.set_title("Variation des cours boursiers par année")
+        # st.pyplot(fig_2, use_container_width=True)
+
+        
+
+
     disclaimer_display()
+
+# Return_n
 
 # Machine Learning
 if page == pages[3]:
     st.header("Machine Learning")
+
+# Affichage du dataframe avec encodage et standardisation
+
+# Choix de la métrique Accuracy
+
+# Choix des modèles Lazy predict
+
+# Optimisation des hyper-paramètres
+
+# Matrice de confusion et ROC_AUC
+
+# Courbe de convergence
 
     disclaimer_display()
 
