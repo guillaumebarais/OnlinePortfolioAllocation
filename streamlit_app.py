@@ -331,6 +331,21 @@ if page == pages[2]:
              * **marketCap (entier)** : Capitalisation boursière totale.
              """)
     
+    st.subheader('Données comptables et financières')
+    st.write("""
+             10 variables sont retenues sur les 332 variables obtenues par les méthodes .balance_sheet, .cash_flow et .financials :
+            * **Total Revenue (float)** : Le revenu total généré par une entreprise à partir de ses activités principales au cours d'une période comptable donnée.
+            * **Net Income (float)** : Le bénéfice net réalisé par une entreprise après déduction de toutes les charges, dépenses, impôts et intérêts.
+            * **EBITDA (float)** : Un indicateur financier mesurant les bénéfices d'une entreprise avant intérêts, impôts, dépréciation et amortissement.
+            * **Basic EPS (float)** : Le bénéfice par action de base, représentant le montant du bénéfice net attribuable à chaque action ordinaire.
+            * **Operating Cash Flow (float)** : La mesure du flux de trésorerie généré par les activités opérationnelles d'une entreprise.
+            * **Free Cash Flow (float)** : La mesure du flux de trésorerie disponible après les dépenses en capital et les investissements nécessaires.
+            * **Total Assets (float)** : La somme de tous les actifs détenus par une entreprise, y compris les actifs courants et non courants.
+            * **Long Term Debt (float)** : La dette financière à long terme d'une entreprise, généralement contractée pour une durée supérieure à un an.
+            * **Total Liabilities Net Minority Interest (float)** : Le total des passifs d'une entreprise, y compris la dette et les autres obligations.
+            * **Stockholders Equity (float)** : La valeur nette des capitaux propres d'une entreprise après le remboursement de toutes les dettes.
+             """)
+
     st.subheader("Sélection de la variable à visualiser")
     variable_infos = [
         'country', 
@@ -338,7 +353,19 @@ if page == pages[2]:
         'industry et sector', 
         'longBusinessSummary', 
         'fullTimeEmployees',
-        'marketCap']
+        'marketCap',
+        'Total Revenue',
+        'Net Income',
+        'EBITDA',
+        'Basic EPS',
+        'Operating Cash Flow',
+        'Free Cash Flow',
+        'Total Assets',
+        'Long Term Debt',
+        'Total Liabilities Net Minority Interest',
+        'Stockholders Equity'
+        ]
+
     choix_info = st.selectbox(
         'Choix d\'une variable :',
          variable_infos, 
@@ -495,7 +522,7 @@ if page == pages[2]:
 
         st.write("")
         st.write("")
-        st.text("Exemples de classidication :")
+        st.text("Exemple de classification :")
 
         df_business = pd.merge(
             left=df_business.reset_index(),
@@ -588,7 +615,7 @@ if page == pages[2]:
     if choix_info == 'marketCap':
         st.write("""
                 Les capitalisations boursières sont exprimées dans des **devises différentes**.  
-                Une **conversion en Euro** de toutes les devises  en a réalisée lors d'une phase de pré-traitement. 
+                Une **conversion en Euro** de toutes les devises a été effectuée lors d'une phase de pré-traitement. 
                 """)
 
         st.write("")
@@ -611,7 +638,7 @@ if page == pages[2]:
             st.pyplot(fig, use_container_width=True)
 
         fig_2, ax_2 = plt.subplots(figsize=(10,6))
-        sns.barplot(data=df_market.head(10), x=df_market.head(10)['marketCap'] / 1e9, y='longName', hue='longName', orient='h', ax=ax_2)
+        sns.barplot(data=df_market.head(10), x=df_market.head(10)['marketCap'] * 1e-9, y='longName', hue='longName', orient='h', ax=ax_2)
         ax_2.set_xlabel('Capitalisation (milliard d\'euros)')
         ax_2.set_ylabel('')
         ax_2.set_title("Les 10 premières sociétés par capitalisation boursière")
@@ -620,10 +647,10 @@ if page == pages[2]:
         st.write("")
         st.write("""
                 Création d'une nouvelle variable 'cap_category' permettant de regrouper les sociétés par capitalisation boursière :  
-                * Micro-Cap (Micro-capitalisations) : <300 millions d’euros,  
-                * Small-Cap (Petites capitalisations) : < 2 milliards d’euros,  
-                * Mid-Cap (Moyennes capitalisations) : entre 2 et 10 milliards d’euros,  
-                * Large-Cap (Grandes capitalisations) : > 10 milliards d’euros.  
+                * Micro-Cap (Micro-capitalisations) : <300 millions d'euros,  
+                * Small-Cap (Petites capitalisations) : < 2 milliards d'euros,  
+                * Mid-Cap (Moyennes capitalisations) : entre 2 et 10 milliards d'euros,  
+                * Large-Cap (Grandes capitalisations) : > 10 milliards d'euros.  
                 """)
 
         col3, col4 = st.columns(2)
@@ -659,12 +686,104 @@ if page == pages[2]:
         
         st.write("Nombre de modalités : ", stock_data['cap_category'].nunique())
 
+    def display_feature(feature):
+        st.write("""
+                Les capitalisations boursières sont exprimées dans des **devises différentes**.  
+                Une **conversion en Euro** de toutes les devises a été effectuée lors d'une phase de pré-traitement. 
+                """)
+        
+        st.write("")
 
+        df_feature = stock_data.loc[~(stock_data['year'] == 2024), ['year', feature, f"{feature} : Annual Variation"]].copy()
+        df_feature = df_feature.sort_values(by=feature, ascending=False)
 
+        describe = []
+        for year in sorted(df_feature['year'].unique()):
+            stats = df_feature.loc[df_feature['year'] == year, [feature]].describe()
+            stats = stats.rename(columns={feature: f'{feature} {year}'})
+            describe.append(stats)
 
+        result = pd.concat(describe, axis=1)
 
+        st.dataframe(result, use_container_width=True)
 
+        fig, ax = plt.subplots()
+        palette = sns.color_palette("hls", len(df_feature['year'].unique()))
+        sns.boxplot(data=df_feature, x='year', y=df_feature[feature] * 1e-6, hue='year', palette=palette, ax=ax)
+        ax.set_yscale('symlog')
+        ax.set_ylabel(f'{feature} (million d\'euros)')
+        ax.set_title(f"Distribution de {feature}")
+        st.pyplot(fig, use_container_width=True)
 
+        st.write(f"""
+                Nouvelle variable : **'{feature} : Annual Variation'**  
+                Cette variable est créée en calculant **la variation en pourcent (%) de {feature} par rapport à l'année précédente**.
+                """)
+
+        st.text(f"Exemple de calcul de variation annuelle")
+        
+        all_actions = sorted([dico_isin_name[isin] for isin in set(df_feature.index.values)])
+
+        selected_for_feature = st.selectbox(
+            'Choix de l\'action',
+            all_actions,
+            key ='all_feature',
+            index=None,
+            placeholder="Sélectionner une action...")
+        st.write('L\'action choisie est ', selected_for_feature, '.')
+
+        if selected_for_feature is not None:
+            df_feature['year'] = df_feature['year'].astype('str')
+            df_feature[feature] = df_feature[feature].round(0)
+            df_feature[f"{feature} : Annual Variation"] = (df_feature[f"{feature} : Annual Variation"] * 100).round(1)
+
+            df_feature = df_feature.rename(
+                columns={
+                    f"{feature}" : f"{feature} en euros",
+                    f"{feature} : Annual Variation" : f"{feature} : Annual Variation en %"
+                })
+
+            st.dataframe(
+                df_feature.loc[
+                    dico_name_isin[
+                        selected_for_feature]['isin'], ['year', f"{feature} en euros", f"{feature} : Annual Variation en %"]],
+                use_container_width=True
+                )
+
+        st.write("")
+        st.write(f"""
+        Traitement des valeurs manquantes de '{feature}' et '{feature} : Annual Variation' : KNNImputer()
+        """)
+
+    if choix_info == 'Total Revenue':
+        display_feature(choix_info)
+
+    if choix_info == 'Net Income':
+        display_feature(choix_info)
+
+    if choix_info == 'EBITDA':
+        display_feature(choix_info)
+
+    if choix_info == 'Basic EPS':
+        display_feature(choix_info)
+
+    if choix_info == 'Operating Cash Flow':
+        display_feature(choix_info)
+
+    if choix_info == 'Free Cash Flow':
+        display_feature(choix_info)
+
+    if choix_info == 'Total Assets':
+        display_feature(choix_info)
+
+    if choix_info == 'Long Term Debt':
+        display_feature(choix_info)
+
+    if choix_info == 'Total Liabilities Net Minority Interest':
+        display_feature(choix_info)
+
+    if choix_info == 'Stockholders Equity':
+        display_feature(choix_info)
 
     disclaimer_display()
 
