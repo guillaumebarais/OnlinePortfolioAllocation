@@ -752,7 +752,11 @@ if page == pages[2]:
 
         st.write("")
         st.write(f"""
-        Traitement des valeurs manquantes de '{feature}' et '{feature} : Annual Variation' : KNNImputer()
+        Traitement des valeurs manquantes de '{feature}' et '{feature} : Annual Variation' :  
+        * KNNimputer()
+        * Exceptés :
+            * 'Basic EPS' et 'Basic EPS : Annual Variation', remplacement des valeurs non documentées par 0 (hypothèse pas de bénéfices)
+            * 'Long Term Debt' et 'Long Term Debt : Annual Variation', remplacement des valeurs non documentées par 0 (hypothèse sociétés non endettées)
         """)
 
     if choix_info == 'Total Revenue':
