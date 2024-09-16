@@ -319,7 +319,7 @@ if page == pages[2]:
     st.header('Analyse des Données')
     st.subheader('Informations générales')
     st.write("""
-             9 variables sont retenus sur les 146 variables obtenus par la méthode .info :
+             9 variables sont retenues sur les 146 variables obtenus par la méthode .info :
              * **isin** (chaîne de caractères) : Code du titre financier,
              * **name** (chaîne de caractères) : Nom de la société,
              * **country** (catégories) : Pays de la société,
@@ -362,10 +362,6 @@ if page == pages[2]:
                 """)
         
         st.write("Les pays non éligibles ont été retirés du dataset.")
-
-        st.write("""
-                Encodage : Catégories avec LabelEncoder()
-                """)
         
         st.write("Nombre de modalités : ", df_country['Pays'].nunique())
         
@@ -382,10 +378,6 @@ if page == pages[2]:
         st.write("""
                 Traitement des valeurs manquantes : Pas de valeurs manquantes
               """)
-
-        st.write("""
-                Encodage : Catégories avec LabelEncoder()
-                """)
         
         st.write("Nombre de modalités : ", df_exchange['Place de cotation'].nunique())
 
@@ -425,10 +417,6 @@ if page == pages[2]:
         st.write("""
                 Traitement des valeurs manquantes : Création d'une catégorie 'Not Defined or Others'
                 """)
-
-        st.write("""
-                Encodage : Catégories avec LabelEncoder()
-                """)
          
         st.write("Nombre de modalités : ", df_industry['Catégorie industrielle'].nunique())
 
@@ -456,7 +444,7 @@ if page == pages[2]:
         st.write("Nombre de modalités : ", df_new_industry['New Industry'].nunique())
 
     if choix_info == 'longBusinessSummary':
-        st.write("La variable longBusinessSummary décrivant l'activité de l'entreprise contient de nombreuses informations.")
+        st.write("La variable longBusinessSummary décrivant l'activité de la société contient de nombreuses informations.")
 
         st.text("Exemples de description :")
         st.dataframe(stock_info[['longName','longBusinessSummary']].sample(5))
@@ -485,7 +473,7 @@ if page == pages[2]:
         
         st.write("""
                 * Hierarchical Clustering (_AgglomerativeClustering()_) :  
-                    * Regroupement non supervisé des entreprise par similitude permettant de créer une nouvelle feature 'businessClass'  
+                    * Regroupement non supervisé des sociétés par similitude permettant de créer une nouvelle feature 'businessClass'  
                     * Meilleur compromis d'après le score de silhouette et le score de Calinski-Harabasz (elbow method) : 10 clusters
                 """)
 
@@ -531,7 +519,7 @@ if page == pages[2]:
                 )
 
     if choix_info == 'fullTimeEmployees':
-        df_employees = stock_info[['fullTimeEmployees']].copy()
+        df_employees = stock_info[['longName','fullTimeEmployees','fte_category']].copy().sort_values(by='fullTimeEmployees', ascending=False).drop_duplicates(keep='first')
 
         col1, col2 = st.columns(2)
 
@@ -539,6 +527,8 @@ if page == pages[2]:
             st.dataframe(df_employees['fullTimeEmployees'].describe(), use_container_width=True)
 
         with col2:
+            st.write("")
+            st.write("")
             fig, ax = plt.subplots()
             sns.boxplot(data=df_employees, y='fullTimeEmployees', ax=ax)
             ax.set_yscale('log')
@@ -546,19 +536,54 @@ if page == pages[2]:
             ax.set_title("Distributions des effectifs")
             st.pyplot(fig, use_container_width=True)
 
+        fig_2, ax_2 = plt.subplots(figsize=(10,6))
+        sns.barplot(data=df_employees.head(10), x='fullTimeEmployees', y='longName', hue='longName', orient='h', ax=ax_2)
+        ax_2.set_xlabel('Employés')
+        ax_2.set_ylabel('')
+        ax_2.set_title("Les 10 premières sociétés par effectif")
+        st.pyplot(fig_2, use_container_width=True)
 
-        # st.write("""
-        #         Traitement des valeurs manquantes : à partir des deux premières lettres des codes ISIN.
-        #         Par exemple, **FR**0000131906 : France, **PL**PKN0000018 : Pologne
-        #         """)
-        
-        # st.write("Les pays non éligibles ont été retirés du dataset.")
+        st.write("")
+        st.write("""
+                Création d'une nouvelle variable 'fte_category' permettant de regrouper les sociétés par taille d'effectif :  
+                    * TPE (Très Petites Entreprises) : de 0 à 19 employés,  
+                    * PME (Petites et Moyennes Entreprises) : de 20 à 249 employés,  
+                    * ETI (Etablissement de Taille Intermédiaire) : de 250 à 5 000 employés,  
+                    * GE (Grandes Entreprises) : + de 5 000 employés.  
+                """)
 
-        # st.write("""
-        #         Encodage : Catégories avec LabelEncoder()
-        #         """)
+        col3, col4 = st.columns(2)
+
+        with col3:
+            fig_3, ax_3 = plt.subplots(figsize=(6,6))
+            sns.boxplot(data=df_employees, x='fte_category', y='fullTimeEmployees', hue='fte_category', ax=ax_3)
+            ax_3.set_yscale('log')
+            ax_3.set_ylabel('Effectifs')
+            ax_3.set_title("Effectif par catégorie")
+            st.pyplot(fig_3, use_container_width=True)
+
+        with col4:
+            dico_fte_category = {
+                "1" : "TPE",
+                "2" : "PME",
+                "3" : "ETI",
+                "4" : "GE",
+            }
+            
+            df_employees_final = stock_data[['fte_category']]      
+            categorie_name = list(df_employees_final['fte_category'].value_counts().index)
+            categorie_name_mapped = [dico_fte_category[str(int(category))] for category in categorie_name]
+            categorie_value = list(df_employees_final['fte_category'].value_counts())
+            fig_4, ax_4 = plt.subplots(figsize=(6,6))
+            plt.pie(categorie_value, labels = categorie_name_mapped, autopct='%.0f%%')
+            plt.title("Répartition des entreprises par catégorie d'effectif")
+            st.pyplot(fig_4, use_container_width=True)
+
+        st.write("""
+                Traitement des valeurs manquantes : KNNImputer()
+                """)
         
-        # st.write("Nombre de modalités : ", df_country['Pays'].nunique())
+        st.write("Nombre de modalités : ", stock_data['fte_category'].nunique())
 
 
 
