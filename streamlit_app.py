@@ -269,7 +269,7 @@ if page == pages[1]:
     st.write("Les données, comprenant 486 variables et couvrant 4657 sociétés sur la période de 2020 à 2024, occupent un espace de 1,75 Go.")
     st.write("__Exemple de données :__")
     
-    all_actions = [dico_isin_name[isin] for isin in stock_info.index.values]
+    all_actions = sorted([dico_isin_name[isin] for isin in stock_info.index.values])
     selected_action = st.selectbox(
         'Choix de l\'action',
         all_actions,
@@ -505,12 +505,16 @@ if page == pages[2]:
          
         st.write("Nombre de modalités : ", df_business['Business Class'].nunique())
 
+        st.write("")
+        st.write("")
+        st.text("Exemples de classidication :")
+
         df_business = pd.merge(
             left=df_business.reset_index(),
             right=stock_info.reset_index(),
             on='isin', how='inner').set_index('isin')
 
-        all_actions = [dico_isin_name[isin] for isin in stock_info.index.values]
+        all_actions = sorted([dico_isin_name[isin] for isin in df_business.index.values])
         
         selected_for_business = st.selectbox(
             'Choix de l\'action',
@@ -523,9 +527,39 @@ if page == pages[2]:
         if selected_for_business is not None:
             st.dataframe(
                 df_business.loc[dico_name_isin[selected_for_business]['isin'], ['longName', 'Business Class', 'longBusinessSummary']],
-                use_container_width=True)
+                use_container_width=True
+                )
 
+    if choix_info == 'fullTimeEmployees':
+        df_employees = stock_info[['fullTimeEmployees']].copy()
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.dataframe(df_employees['fullTimeEmployees'].describe(), use_container_width=True)
+
+        with col2:
+            fig, ax = plt.subplots()
+            sns.boxplot(data=df_employees, y='fullTimeEmployees', ax=ax)
+            ax.set_yscale('log')
+            ax.set_ylabel('Effectifs')
+            ax.set_title("Distributions des effectifs")
+            st.pyplot(fig, use_container_width=True)
+
+
+        # st.write("""
+        #         Traitement des valeurs manquantes : à partir des deux premières lettres des codes ISIN.
+        #         Par exemple, **FR**0000131906 : France, **PL**PKN0000018 : Pologne
+        #         """)
         
+        # st.write("Les pays non éligibles ont été retirés du dataset.")
+
+        # st.write("""
+        #         Encodage : Catégories avec LabelEncoder()
+        #         """)
+        
+        # st.write("Nombre de modalités : ", df_country['Pays'].nunique())
+
 
 
 
