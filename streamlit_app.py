@@ -533,7 +533,7 @@ if page == pages[2]:
             sns.boxplot(data=df_employees, y='fullTimeEmployees', ax=ax)
             ax.set_yscale('log')
             ax.set_ylabel('Effectifs')
-            ax.set_title("Distributions des effectifs")
+            ax.set_title("Distribution des effectifs")
             st.pyplot(fig, use_container_width=True)
 
         fig_2, ax_2 = plt.subplots(figsize=(10,6))
@@ -546,10 +546,10 @@ if page == pages[2]:
         st.write("")
         st.write("""
                 Création d'une nouvelle variable 'fte_category' permettant de regrouper les sociétés par taille d'effectif :  
-                    * TPE (Très Petites Entreprises) : de 0 à 19 employés,  
-                    * PME (Petites et Moyennes Entreprises) : de 20 à 249 employés,  
-                    * ETI (Etablissement de Taille Intermédiaire) : de 250 à 5 000 employés,  
-                    * GE (Grandes Entreprises) : + de 5 000 employés.  
+                * TPE (Très Petites Entreprises) : de 0 à 19 employés,  
+                * PME (Petites et Moyennes Entreprises) : de 20 à 249 employés,  
+                * ETI (Etablissement de Taille Intermédiaire) : de 250 à 5 000 employés,  
+                * GE (Grandes Entreprises) : + de 5 000 employés.  
                 """)
 
         col3, col4 = st.columns(2)
@@ -585,7 +585,79 @@ if page == pages[2]:
         
         st.write("Nombre de modalités : ", stock_data['fte_category'].nunique())
 
+    if choix_info == 'marketCap':
+        st.write("""
+                Les capitalisations boursières sont exprimées dans des **devises différentes**.  
+                Une **conversion en Euro** de toutes les devises  en a réalisée lors d'une phase de pré-traitement. 
+                """)
 
+        st.write("")
+
+        df_market = stock_info[['longName','marketCap','cap_category']].copy().sort_values(by='marketCap', ascending=False).drop_duplicates(keep='first')
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.dataframe(df_market['marketCap'].describe(), use_container_width=True)
+
+        with col2:
+            st.write("")
+            st.write("")
+            fig, ax = plt.subplots()
+            sns.boxplot(data=df_market, y='marketCap', ax=ax)
+            ax.set_yscale('log')
+            ax.set_ylabel('Capitalisation en Euro')
+            ax.set_title("Distribution de la capitalisation boursière")
+            st.pyplot(fig, use_container_width=True)
+
+        fig_2, ax_2 = plt.subplots(figsize=(10,6))
+        sns.barplot(data=df_market.head(10), x=df_market.head(10)['marketCap'] / 1e9, y='longName', hue='longName', orient='h', ax=ax_2)
+        ax_2.set_xlabel('Capitalisation (milliard d\'euros)')
+        ax_2.set_ylabel('')
+        ax_2.set_title("Les 10 premières sociétés par capitalisation boursière")
+        st.pyplot(fig_2, use_container_width=True)
+
+        st.write("")
+        st.write("""
+                Création d'une nouvelle variable 'cap_category' permettant de regrouper les sociétés par capitalisation boursière :  
+                * Micro-Cap (Micro-capitalisations) : <300 millions d’euros,  
+                * Small-Cap (Petites capitalisations) : < 2 milliards d’euros,  
+                * Mid-Cap (Moyennes capitalisations) : entre 2 et 10 milliards d’euros,  
+                * Large-Cap (Grandes capitalisations) : > 10 milliards d’euros.  
+                """)
+
+        col3, col4 = st.columns(2)
+
+        with col3:
+            fig_3, ax_3 = plt.subplots(figsize=(6,6))
+            sns.boxplot(data=df_market, x='cap_category', y='marketCap', hue='cap_category', ax=ax_3)
+            ax_3.set_yscale('log')
+            ax_3.set_ylabel('Capitalisation boursière')
+            ax_3.set_title("Capitalisation boursière par catégorie")
+            st.pyplot(fig_3, use_container_width=True)
+
+        with col4:
+            dico_cap_category = {
+                "1" : "Micro-Cap",
+                "2" : "Small-Cap",
+                "3" : "Mid-Cap",
+                "4" : "Large-Cap",
+            }
+            
+            df_market_final = stock_data[['cap_category']]      
+            categorie_name = list(df_market_final['cap_category'].value_counts().index)
+            categorie_name_mapped = [dico_cap_category[str(int(category))] for category in categorie_name]
+            categorie_value = list(df_market_final['cap_category'].value_counts())
+            fig_4, ax_4 = plt.subplots(figsize=(6,6))
+            plt.pie(categorie_value, labels = categorie_name_mapped, autopct='%.0f%%')
+            plt.title("Répartition des entreprises par capitalisation boursière")
+            st.pyplot(fig_4, use_container_width=True)
+
+        st.write("""
+                Traitement des valeurs manquantes : KNNImputer()
+                """)
+        
+        st.write("Nombre de modalités : ", stock_data['cap_category'].nunique())
 
 
 
