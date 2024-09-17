@@ -11,6 +11,13 @@ import shap
 from streamlit_shap import st_shap
 import matplotlib.pyplot as plt
 import seaborn as sns
+from sklearn.metrics import (
+    auc,
+    accuracy_score,
+    classification_report,
+    roc_auc_score,
+    roc_curve,
+)
 
 # Définition des variables
 DataScientest = """https://datascientest.com/"""
@@ -20,6 +27,10 @@ stock_data_file = '20240719_df_v2.csv'
 data_2024_file = 'preprocessed_data_2024.csv'
 stock_info_file = '20240423_PEA_stocks_info.csv'
 reference_finale_file = 'Reference_finale.csv'
+X_train_file = 'X_train.csv'
+X_test_file = 'X_test.csv'
+y_train_file = 'y_train.csv'
+y_test_file =  'y_test.csv'
 dico_name_isin_file = 'dictionnaire_nom_isin.json'
 dico_isin_name_file = 'dictionnaire_isin_nom.json'
 dico_isin_ticker_file = 'dictionnaire_isin_ticker.json'
@@ -27,8 +38,10 @@ dico_exchange_file = 'dictionnaire_exchange.json'
 lemmatizer_pic_file = 'lemmatization.jpg'
 vectorizer_pic_file = 'vectorization.jpg'
 CAH_dendogramme_file = 'CAH_dendogramme.jpg'
+lazypredict_classification_file = 'lazypredict_classification.jpg'
 explainer_shap_RFC_file = 'explainer_shap_RFC.json'
 explainer_shap_RFR_file = 'explainer_shap_RFR.json'
+inter_shap_rfc_file = 'inter_shap_rfc.jpg'
 today = date.today()
 today_pd_format = pd.Timestamp.today().normalize()
 indices_reference = {
@@ -101,6 +114,10 @@ def shap_object_reconstruction(shap_values_dict):
         )
     return shap_values
 
+@st.cache_data
+def build_explainer(shap_values_dict):
+    return shap_object_reconstruction(shap_values_dict)
+
 @st.cache_resource
 def gain_calculation(tickers):
     gain = []
@@ -152,6 +169,16 @@ stock_info = read_df(stock_info_file)
 
 stock_data = read_df(stock_data_file)
 
+X_train = pd.read_csv(X_train_file, index_col=0)
+
+X_test = pd.read_csv(X_test_file, index_col=0)
+
+y_train_rfr = pd.read_csv(y_train_file, index_col=0)
+y_train_rfc = y_train_rfr['Return_n+1'].apply(lambda x: 0 if x <= 0 else 1)
+
+y_test_rfr = pd.read_csv(y_test_file, index_col=0)
+y_test_rfc = y_test_rfr['Return_n+1'].apply(lambda x: 0 if x <= 0 else 1)
+
 reference_finale = read_df(reference_finale_file)
 
 rfc = load_model(rfc_file)
@@ -199,7 +226,7 @@ pages=[
     "Données",
     "Analyse des Données",
     "Machine Learning",
-    "Prédiction",
+    "Prédiction et interprétabilité",
     "Stratégies OPA",
     ]
 page=st.sidebar.radio("Aller vers", pages)
@@ -964,20 +991,311 @@ if page == pages[2]:
 if page == pages[3]:
     st.header("Machine Learning")
 
+    st.write("""
+             Le problème est abordé de deux façons :  
+             * Classification deux catégories : l'objectif est de prédire si la variation du cours sera positive.
+             * Régression : l'objectif est de prédire la valeur de la variation du cours.
+             """)
+    
+    st.subheader("Sélection de la modélisation")
+    modelisations = ['Classification', 'Régression']
+    modelisation = st.selectbox(
+        'Choix de la modélisation :', 
+        modelisations, 
+        key ='modelisation_choice',
+        index=None,
+        placeholder="Sélectionner une modélisation...")
+    st.write('La modélisation choisie est ', modelisation, '.')
+
+    if modelisation is not None:
+
+        if modelisation == "Classification":
+            st.subheader("Classification")
+
+            st.write("#### Préparation du dataset")
+
+            st.write("##### Return_n+1")
+            st.write("""
+                     Encodage de la variable en deux catégories :  
+                     * Variation positive : 1
+                     * Variation négative : 0
+                     """)
+            
+            X = reference_finale.copy()
+            X['Return_n+1'] = X['Return_n+1'].apply(lambda x: 0 if x <= 0 else 1)
+
+            col1, col2, col3 = st.columns(3)
+
+            years = [2020, 2021, 2022]
+
+            with col1:
+                year = years[0]
+                fig_1, ax_1 = plt.subplots()
+                subset = X[X['year'] == year]
+                sns.countplot(data=subset, x='Return_n+1', ax=ax_1)
+                ax_1.set_title(f"{year} : Répartition de la performance dans l'année {year}")
+                ax_1.set_xlabel("Return_n+1")
+                ax_1.set_ylabel("Fréquence")
+                st.pyplot(fig_1, use_container_width=True)
+                plt.close(fig_1)
+            
+            with col2:
+                year = years[1]
+                fig_2, ax_2 = plt.subplots()
+                subset = X[X['year'] == year]
+                sns.countplot(data=subset, x='Return_n+1', ax=ax_2)
+                ax_2.set_title(f"{year} : Répartition de la performance dans l'année {year}")
+                ax_2.set_xlabel("Return_n+1")
+                ax_2.set_ylabel("Fréquence")
+                st.pyplot(fig_2, use_container_width=True)
+                plt.close(fig_2)
 
 
-# Affichage du dataframe avec encodage et standardisation
+            with col3:
+                year = years[2]
+                fig_3, ax_3 = plt.subplots()
+                subset = X[X['year'] == year]
+                sns.countplot(data=subset, x='Return_n+1', ax=ax_3)
+                ax_3.set_title(f"{year} : Répartition de la performance dans l'année {year}")
+                ax_3.set_xlabel("Return_n+1")
+                ax_3.set_ylabel("Fréquence")
+                st.pyplot(fig_3, use_container_width=True)
+                plt.close(fig_3)
 
-# Choix de la métrique Accuracy
+            ratio = X['Return_n+1'].value_counts().at[1] / len(X['Return_n+1'])
+            st.write(f"""
+                    Sur l’ensemble du jeu de donnée, la répartition de la variable 'Return_n+1' est équilibrée 
+                    avec un **ratio de {round(ratio * 100, 0)}%** de la classe 1 par rapport à la classe 0.  
+                    """)
 
-# Choix des modèles Lazy predic
-# Optimisation des hyper-paramètres
+            st.write("##### Traitement des variables catégorielles")
+            st.write("""
+                     Les 6 variables catégorielles sont :
+                     * 'country',
+                     * 'new_industry',
+                     * 'exchange',
+                     * 'fte_category',
+                     * 'cap_category',
+                     * 'businessClass'.
 
-# Matrice de confusion et ROC_AUC
+                     Encodage des variables catégorielles par **OneHotEncoder()**.
+                     """)
+
+            st.write("##### Création des datasets Train et Test")
+            st.write("""
+                    Le découpage train_test_split est effectuée par année. 
+                    Cette construction permet d'avoir une stratification des données par années.
+                     
+                    La taille de l'échantillon de test représente 30% des données.
+                    """)
+            
+            st.write("##### Standardisation des variables numériques")
+            st.write("""
+                    Les 21 variables numériques sont :
+                    * 'Total Revenue',
+                    * 'Total Revenue : Annual Variation',
+                    * 'Net Income,
+                    * 'Net Income : Annual Variation',
+                    * 'EBITDA,
+                    * 'EBITDA : Annual Variation',
+                    * 'Basic EPS,
+                    * 'Basic EPS : Annual Variation',
+                    * 'Operating Cash Flow,
+                    * 'Operating Cash Flow : Annual Variation',
+                    * 'Free Cash Flow,
+                    * 'Free Cash Flow : Annual Variation',
+                    * 'Total Assets,
+                    * 'Total Assets : Annual Variation',
+                    * 'Long Term Debt,
+                    * 'Long Term Debt : Annual Variation',
+                    * 'Total Liabilities Net Minority Interest,
+                    * 'Total Liabilities Net Minority Interest : Annual Variation',
+                    * 'Stockholders Equity,
+                    * 'Stockholders Equity : Annual Variation',
+                    * 'Return_n'.
+                    """)
+
+            st.write("'Return_n' est standardisé par **RobustScaler()**. \
+                     Cette méthode est moins sensible aux valeurs aberrantes ou extrêmes que d’autres méthodes de normalisation.")
+
+            st.write("Les autres variables numériques sont standardisées par **StandardScaler()**.")
+
+            st.write("#### Choix de la métrique")
+
+            st.write("""
+                     La métrique retenue est la **précision** (accuracy).  
+                     L'objectif est de cibler avec exactitude les cas positifs (précision) et non d'identifier un maximum de cas positifs (rappel).
+                     """)
+            
+            st.write("#### Choix du modèle")
+
+            st.markdown("""
+                        La librairie [Lazy Predict](https://pypi.org/project/lazypredict/) a été utilisée pour identifier le modèle 
+                        le plus performant.
+                        """)
+            
+            st.image(lazypredict_classification_file, use_column_width=False)
+
+            st.write("Le modèle retenu est le modèle **RandomForestClassifier()** avec une précision de 0,68.")
+
+            st.write("#### Optimisation des hyper-paramètres ")
+
+            st.write("Optimisation des hyperparamètres par une recherche en grille aléatoire \
+                     avec une validation croisée RandomizedSearchCV() :")
+
+            st.code("""
+                    parametres = {
+                        "n_estimators" : [50, 75, 100, 500, 800, 1500, 2500, 5000],
+                        "criterion" : ['gini', 'entropy', 'log_loss'],
+                        "max_depth" : [10, 20, 30, 40, 50, None],
+                        "min_samples_split" : [2, 5, 10, 15, 20],
+                        "min_samples_leaf" : [1, 2, 5, 10, 15],
+                        "max_features" : [None, 'sqrt', 'log2']
+                    }
+                    """,
+                    language='python')
+            
+            st.write("Les meilleurs hyper-paramètres sont :")
+
+            st.code("""
+                    best_params = {
+                        'n_estimators': 500,
+                        'min_samples_split': 5, 
+                        'min_samples_leaf': 2, 
+                        'max_features': 'sqrt', 
+                        'max_depth': 40, 
+                        'criterion': 'log_loss'
+                    }
+                    """,
+                    language='python')
+            
+            st.write("#### Entraînement et évaluation du modèle")
+
+            st.write("***Entraînement***")
+
+            y_train = y_train_rfc
+            y_test = y_test_rfc
+            y_pred = rfc.predict(X_test)
+
+            st.write("Accuracy : ", rfc.score(X_train, y_train))
+            
+            st.write("Classification Report")
+            report = classification_report(y_train, rfc.predict(X_train))
+            st.code(report, language='text')
+
+            st.write("***Test***")
+
+            st.write("Classification Report")
+            report = classification_report(y_test, y_pred)
+            st.code(report, language='text')
+            
+            st.write("Matrice de confusion")
+            matrice = pd.crosstab(y_test, y_pred, rownames=['Classe réelle'], colnames=['Classe prédite'])
+            st.code(matrice, language='text')
+
+            st.write("#### Prédictions en fonction du seuil de probabilité")
+            
+            probs = rfc.predict_proba(X_test)
+            probs = probs[:, 1]
+            results = pd.concat([X_test, y_test, pd.DataFrame(probs, index=X_test.index, columns=['probs'])], axis=1)
+
+            thresholds = np.arange(0.5, 1, 0.005)
+
+            true_positive = []
+            false_positive = []
+
+            for threshold in thresholds:
+                try:
+                    true_positive.append(
+                        pd.crosstab(
+                            y_test,
+                            (probs>=threshold).astype('int'),
+                        ).iloc[1,1]
+                    )
+                    
+                    false_positive.append(
+                        pd.crosstab(
+                            y_test,
+                            (probs>=threshold).astype('int'),
+                        ).iloc[0,1]
+                    )
+                except:
+                    pass
+
+            accuracy = [tp / (tp + fp) if (tp + fp) != 0 else 0 for tp, fp in zip(true_positive, false_positive)]
+
+            fig_5, ax_5 = plt.figure(figsize=(8, 6)), plt.gca()
+
+            # Tracé des courbes true_positive et false_positive sur le premier axe y
+            line1, = ax_5.plot(thresholds[:len(true_positive)], true_positive, label="True Positive", color='b')
+            line2, = ax_5.plot(thresholds[:len(false_positive)], false_positive, label="False Positive", color='r')
+            ax_5.set_xlabel("Seuil de Probabilité")
+            ax_5.set_ylabel("Nombre de Prédictions", color='b')
+            ax_5.tick_params(axis='y', labelcolor='b')
+            ax_5.grid()
+            ax_5.set_yticks(range(0, max(true_positive + false_positive) + 25, 25))
+            ax_5.set_xticks([i * 0.05 for i in range(int(min(thresholds) / 0.05), int(max(thresholds) / 0.05) + 1)])
+
+            # Création d'un second axe y pour l'accuracy
+            ax_6 = ax_5.twinx()
+            line3, = ax_6.plot(thresholds[:len(accuracy)], accuracy, label="Accuracy", color='g')
+            ax_6.set_ylabel("Précision", color='g')
+            ax_6.tick_params(axis='y', labelcolor='g')
+            ax_6.annotate('seuil = 0,823\nprécision = 0,98',
+                        xy=(0.82, 0.975),
+                        xytext=(0.65,0.96),
+                        color='g',
+                        arrowprops={'facecolor':'green'})
+            ax_6.annotate('seuil = 0,908\nprécision = 1',
+                        xy=(0.905, 1),
+                        xytext=(0.75,0.99),
+                        color='g',
+                        arrowprops={'facecolor':'green'})
+
+            # Ajout d'une seule légende pour les trois courbes
+            lines = [line1, line2, line3]
+            labels = [line.get_label() for line in lines]
+            ax_5.legend(lines, labels, bbox_to_anchor=(0.98, 0.4))
+
+            plt.title("Prédictions et précisions en fonction du seuil de probabilité")
+            st.pyplot(fig_5, use_container_width=True)
+            plt.close(fig_5)
+
+            st.write("#### Interprétabilité")
+            st.image(inter_shap_rfc_file, use_column_width=True)
+
+
+            
 
 # Courbe de convergence et taux de confiance
 
     disclaimer_display()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Prédiction de la variation du cours d'une action
 if page == pages[4]:
@@ -1037,7 +1355,7 @@ if page == pages[4]:
             modele = selection_model(option)
 
             if option == 'Random Forest Classifier':
-                explainer = shap_object_reconstruction(shap_values_RFC_dict)
+                explainer = build_explainer(shap_values_RFC_dict)
                 pred = modele.predict(data_2024[data_2024.index == isin])[0]
                 prob = modele.predict_proba(data_2024[data_2024.index == isin])[0,1]
             
@@ -1074,7 +1392,7 @@ if page == pages[4]:
 
 
             elif option == 'Random Forest Regressor':
-                explainer = shap_object_reconstruction(shap_values_RFR_dict)
+                explainer = build_explainer(shap_values_RFR_dict)
                 pred = modele.predict(data_2024[data_2024.index == isin])[0]
                 
                 def generate_display_text(action, pred):
@@ -1141,7 +1459,7 @@ if page == pages[5]:
         choix_2, 
         key ='model_choice',
         index=None,
-        placeholder="Sélectionner une modèle...")
+        placeholder="Sélectionner un modèle...")
     st.write('Le modèle choisi est ', option_2, '.')
 
     if option_2 is not None:
