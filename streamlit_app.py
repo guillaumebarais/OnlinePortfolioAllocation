@@ -12,11 +12,9 @@ from streamlit_shap import st_shap
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import (
-    auc,
-    accuracy_score,
     classification_report,
-    roc_auc_score,
-    roc_curve,
+    mean_absolute_error,
+    mean_squared_error
 )
 
 # Définition des variables
@@ -39,9 +37,11 @@ lemmatizer_pic_file = 'lemmatization.jpg'
 vectorizer_pic_file = 'vectorization.jpg'
 CAH_dendogramme_file = 'CAH_dendogramme.jpg'
 lazypredict_classification_file = 'lazypredict_classification.jpg'
+lazypredict_regression_file = 'lazypredict_regression.jpg'
 explainer_shap_RFC_file = 'explainer_shap_RFC.json'
 explainer_shap_RFR_file = 'explainer_shap_RFR.json'
 inter_shap_rfc_file = 'inter_shap_rfc.jpg'
+inter_shap_rfr_file = 'inter_shap_rfr.jpg'
 today = date.today()
 today_pd_format = pd.Timestamp.today().normalize()
 indices_reference = {
@@ -910,15 +910,15 @@ if page == pages[2]:
         st.pyplot(fig, use_container_width=True)
 
         st.write("""Les marchés financiers sont influencés par des facteurs externes tels que des événements géopolitiques ou économiques. 
-                Pour réduire l’impact de ces facteurs, **les variations sont ajustées par rapport à leur moyenne annuelle** afin d'obtenir une moyenne nulle. 
+                Pour réduire l'impact de ces facteurs, **les variations sont ajustées par rapport à leur moyenne annuelle** afin d'obtenir une moyenne nulle. 
                  Cela permet de rendre les années comparables en termes de moyenne. 
                  """)
         
         st.markdown(r"""
                     Les marchés ont été très volatils en 2021 et 2022. 
                     Les performances les plus extrêmes, qu'elles soient à la hausse ou à la baisse, peuvent être considérées comme des valeurs aberrantes. 
-                    Les outliers sont plafonnées à 1,5 fois l'intervalle interquartile :    
-                    $$1.5 \times IQR \, (Q3 - Q1)$$.
+                    Les outliers sont plafonnées à 1,5 fois l'intervalle interquartile (IQR) :    
+                    $$1.5 \times (Q3 - Q1)$$.
                     """)
         
         st.write("Après traitement :")
@@ -1014,7 +1014,7 @@ if page == pages[3]:
 
             st.write("#### Préparation du dataset")
 
-            st.write("##### Return_n+1")
+            st.write("##### Variable cible 'Return_n+1'")
             st.write("""
                      Encodage de la variable en deux catégories :  
                      * Variation positive : 1
@@ -1064,7 +1064,7 @@ if page == pages[3]:
 
             ratio = X['Return_n+1'].value_counts().at[1] / len(X['Return_n+1'])
             st.write(f"""
-                    Sur l’ensemble du jeu de donnée, la répartition de la variable 'Return_n+1' est équilibrée 
+                    Sur l'ensemble du jeu de donnée, la répartition de la variable 'Return_n+1' est équilibrée 
                     avec un **ratio de {round(ratio * 100, 0)}%** de la classe 1 par rapport à la classe 0.  
                     """)
 
@@ -1116,7 +1116,7 @@ if page == pages[3]:
                     """)
 
             st.write("'Return_n' est standardisé par **RobustScaler()**. \
-                     Cette méthode est moins sensible aux valeurs aberrantes ou extrêmes que d’autres méthodes de normalisation.")
+                     Cette méthode est moins sensible aux valeurs aberrantes ou extrêmes que d'autres méthodes de normalisation.")
 
             st.write("Les autres variables numériques sont standardisées par **StandardScaler()**.")
 
@@ -1241,61 +1241,262 @@ if page == pages[3]:
             line3, = ax_6.plot(thresholds[:len(accuracy)], accuracy, label="Accuracy", color='g')
             ax_6.set_ylabel("Précision", color='g')
             ax_6.tick_params(axis='y', labelcolor='g')
-            ax_6.annotate('seuil = 0,823\nprécision = 0,98',
+            ax_6.annotate('seuil = 0,825\nprécision = 0,98',
                         xy=(0.82, 0.975),
                         xytext=(0.65,0.96),
                         color='g',
                         arrowprops={'facecolor':'green'})
-            ax_6.annotate('seuil = 0,908\nprécision = 1',
+            ax_6.annotate('seuil = 0,91\nprécision = 1',
                         xy=(0.905, 1),
-                        xytext=(0.75,0.99),
+                        xytext=(0.785,0.99),
+
                         color='g',
                         arrowprops={'facecolor':'green'})
+            
+            ax_6.axvline(x=0.826, color='purple', linestyle='--', label='Seuil 0.826')
+            ax_6.axvline(x=0.91, color='purple', linestyle='--', label='Seuil 0.910')
 
             # Ajout d'une seule légende pour les trois courbes
             lines = [line1, line2, line3]
             labels = [line.get_label() for line in lines]
             ax_5.legend(lines, labels, bbox_to_anchor=(0.98, 0.4))
 
-            plt.title("Prédictions et précisions en fonction du seuil de probabilité")
+            plt.title("Prédictions et précision en fonction du seuil de probabilité")
             st.pyplot(fig_5, use_container_width=True)
             plt.close(fig_5)
 
             st.write("#### Interprétabilité")
             st.image(inter_shap_rfc_file, use_column_width=True)
 
-
+        if modelisation == "Régression":
+            st.subheader("Régression")
             
+            st.write("#### Préparation du dataset")
 
-# Courbe de convergence et taux de confiance
+            st.write("##### Variable cible 'Return_n+1'")
+
+            col1, col2 = st.columns([3,1])
+
+            with col1:
+                st.write("Visualisation de la distribution de 'Return_n+1' :")
+
+                X = reference_finale.copy()
+                fig, ax = plt.subplots()
+                sns.histplot(data=X, x='Return_n+1', kde=True, ax=ax)
+                ax.set_title("Distribution de la variable cible Return_n+1")
+                st.pyplot(fig)
+
+            with col2:
+                st.write("")
+                st.dataframe(X['Return_n+1'].describe(percentiles=[0.1, 0.25, 0.50, 0.75, 0.9]))
+
+            st.write("##### Traitement des variables catégorielles")
+            st.write("""
+                     Les 6 variables catégorielles sont :
+                     * 'country',
+                     * 'new_industry',
+                     * 'exchange',
+                     * 'fte_category',
+                     * 'cap_category',
+                     * 'businessClass'.
+
+                     Encodage des variables catégorielles par **OneHotEncoder()**.
+                     """)
+
+            st.write("##### Création des datasets Train et Test")
+            st.write("""
+                    Le découpage train_test_split est effectuée par année. 
+                    Cette construction permet d'avoir une stratification des données par années.
+                     
+                    La taille de l'échantillon de test représente 30% des données.
+                    """)
+            
+            st.write("##### Standardisation des variables numériques")
+            st.write("""
+                    Les 21 variables numériques sont :
+                    * 'Total Revenue',
+                    * 'Total Revenue : Annual Variation',
+                    * 'Net Income,
+                    * 'Net Income : Annual Variation',
+                    * 'EBITDA,
+                    * 'EBITDA : Annual Variation',
+                    * 'Basic EPS,
+                    * 'Basic EPS : Annual Variation',
+                    * 'Operating Cash Flow,
+                    * 'Operating Cash Flow : Annual Variation',
+                    * 'Free Cash Flow,
+                    * 'Free Cash Flow : Annual Variation',
+                    * 'Total Assets,
+                    * 'Total Assets : Annual Variation',
+                    * 'Long Term Debt,
+                    * 'Long Term Debt : Annual Variation',
+                    * 'Total Liabilities Net Minority Interest,
+                    * 'Total Liabilities Net Minority Interest : Annual Variation',
+                    * 'Stockholders Equity,
+                    * 'Stockholders Equity : Annual Variation',
+                    * 'Return_n'.
+                    """)
+
+            st.write("'Return_n' est standardisé par **RobustScaler()**. \
+                     Cette méthode est moins sensible aux valeurs aberrantes ou extrêmes que d'autres méthodes de normalisation.")
+
+            st.write("Les autres variables numériques sont standardisées par **StandardScaler()**.")
+
+            st.write("#### Choix de la métrique")
+
+            st.write("""
+                     La métrique retenue pour le choix du modèle est la **Root Mean Squared Error**.
+                     La métrique retenue pour l'optimisation des hyper paramètres est la  **Mean Absolute Error** (neg_mean_absolute_error).  
+                     L'objectif est de diminuer l'erreur moyenne du modèle plutôt que d'expliquer la variance totale des données.
+                     """)
+            
+            st.write("#### Choix du modèle")
+
+            st.markdown("""
+                        La librairie [Lazy Predict](https://pypi.org/project/lazypredict/) a été utilisée pour identifier le modèle 
+                        le plus performant.
+                        """)
+            
+            st.image(lazypredict_regression_file, use_column_width=False)
+
+            st.write("Le modèle retenu est le modèle **RandomForestRegressor()** avec une RMSE de 0,40.")
+            st.write("La RMSE est élevée par rapport à la plage de valeurs des données et à l'écart inter-quartile Q3-Q1 (0,44), \
+                     il faudrait explorer des méthodes pour améliorer la précision du modèle.")
+
+
+            st.write("#### Optimisation des hyper-paramètres ")
+
+            st.write("Optimisation des hyperparamètres par une recherche en grille aléatoire \
+                     avec une validation croisée RandomizedSearchCV() :")
+
+            st.code("""
+                    parametres = {
+                        "n_estimators" : [50, 100, 500, 1000, 2000, 4000],
+                        "criterion" : ['squared_error', 'absolute_error'],
+                        "max_depth" : [10, 50, None],
+                        "min_samples_split" : [2, 5, 10, 20],
+                        "min_samples_leaf" : [1, 2, 5, 10, 20],
+                        "max_features" : [None, 'sqrt', 'log2'],
+                    }
+                    """,
+                    language='python')
+            
+            st.write("Les meilleurs hyper-paramètres sont :")
+
+            st.code("""
+                    best_params = {
+                        'n_estimators': 2000, 
+                        'min_samples_split': 10, 
+                        'min_samples_leaf': 5, 
+                        'max_features': None, 
+                        'max_depth': None, 
+                        'criterion': 'absolute_error'
+                    }
+                    """,
+                    language='python')
+            
+            st.write("#### Entraînement et évaluation du modèle")
+
+            st.write("***Entraînement***")
+
+            y_train = y_train_rfc
+            y_test = y_test_rfc
+            y_pred = rfr.predict(X_test)
+
+            st.write("MAE : ", mean_absolute_error(y_train, rfr.predict(X_train)))
+            st.write("RMSE : ", np.sqrt(mean_squared_error(y_train, rfr.predict(X_train))))
+            
+            st.write("***Test***")
+            
+            st.write("MAE : ", mean_absolute_error(y_test, y_pred))
+            st.write("RMSE : ", np.sqrt(mean_squared_error(y_test, y_pred)))
+
+            st.write("#### Interprétabilité")
+            st.image(inter_shap_rfr_file, use_column_width=True)
+
+            st.write("#### Prédictions en fonction du seuil de Return_n+1")
+
+            st.markdown("""
+                        Exploitation du modèle Random Forest Regressor comme un modèle de classification :
+                        * Conversion du résultat de la prédiction :
+                            * Classe 1 si Return_n+1 prédit > 0
+                            * Classe 0 si Return_n+1 prédit < 0
+                        * Utilisation de la valeur Return_1 prédite comme l'équivalent d'un seuil.
+                        """)
+            
+            # Evolution TP vs FP en fonction de la valeur prédite
+            def calcul_tp_fp(df):
+                y_test = df['Return_n+1'].apply(lambda x: 0 if x <= 0 else 1)
+                y_pred = df['classification'].apply(lambda x: 0 if x <= 0 else 1)
+                cross_tab = pd.crosstab(y_test, y_pred)
+                tp = cross_tab.get(1, {}).get(1, None)
+                fp = cross_tab.get(1, {}).get(0, None)
+                return tp, fp
+            
+            y_test = y_test.reset_index()
+            y_pred = pd.DataFrame(y_pred, columns=["classification"])
+
+            df_rfr = pd.concat([y_test, y_pred], axis=1)
+
+            resultat_sorted = df_rfr[df_rfr['classification'] > 0].sort_values(by="classification", ascending=False)
+
+            nb_tp = []
+            nb_fp = []
+            for seuil in range(1, len(resultat_sorted) + 1):
+                try:
+                    tp, fp = calcul_tp_fp(resultat_sorted.iloc[:seuil,:])
+                    if (tp is not None):
+                        nb_tp.append(tp)
+                    else:
+                        nb_tp.append(0)
+                    nb_fp.append(fp)
+                except:
+                    pass
+
+            # Calcul de l'accuracy
+            accuracy = [tp / (tp + fp) if (tp + fp) != 0 else 0 for tp, fp in zip(nb_tp, nb_fp)]
+
+            fig_5, ax_5 = plt.figure(figsize=(8, 6)), plt.gca()
+
+            # Tracé des courbes true_positive et false_positive sur le premier axe y
+            line1, = ax_5.plot(resultat_sorted['classification'], nb_tp, label="True Positive", color='b')
+            line2, = ax_5.plot(resultat_sorted['classification'], nb_fp, label="False Positive", color='r')
+            ax_5.set_xlabel("Return_n+1 prédit")
+            ax_5.set_ylabel("Nombre de Prédictions", color='b')
+            ax_5.tick_params(axis='y', labelcolor='b')
+            ax_5.grid()
+            ax_5.set_yticks(range(0, 725, 25))
+            ax_5.set_xticks([i * 0.05 for i in range(int(0.40 / 0.05) + 1)])
+
+            # Création d'un second axe y pour l'accuracy
+            ax_6 = ax_5.twinx()
+            line3, = ax_6.plot(resultat_sorted['classification'], accuracy, label="Accuracy", color='g')
+            ax_6.set_ylabel("Précision", color='g')
+            ax_6.tick_params(axis='y', labelcolor='g')
+            ax_6.annotate('seuil = 0,29\nprécision = 0,97',
+                        xy=(0.292, 0.968),
+                        xytext=(0.325,0.77),
+                        color='g',
+                        arrowprops={'facecolor':'green'})
+            ax_6.annotate('seuil = 0,26\nprécision = 0,97',
+                        xy=(0.255, 0.966),
+                        xytext=(0.14,0.945),
+                        color='g',
+                        arrowprops={'facecolor':'green'})
+            
+            ax_6.axvline(x=0.293, color='purple', linestyle='--', label='Seuil 0.293')
+            ax_6.axvline(x=0.258, color='purple', linestyle='--', label='Seuil 0.258')
+
+            # Ajout d'une seule légende pour les trois courbes
+            lines = [line1, line2, line3]
+            labels = [line.get_label() for line in lines]
+            ax_5.legend(lines, labels, bbox_to_anchor=(0.98, 0.4))
+
+            plt.title("Prédictions et précision en fonction de Return_n+1 prédit")
+            st.pyplot(fig_5, use_container_width=True)
+            plt.close(fig_5)
 
     disclaimer_display()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 # Prédiction de la variation du cours d'une action
 if page == pages[4]:
