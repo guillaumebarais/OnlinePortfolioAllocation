@@ -337,17 +337,17 @@ if page == pages[2]:
     st.subheader('Données comptables et financières')
     st.write("""
              10 variables sont retenues sur les 332 variables obtenues par les méthodes .balance_sheet, .cash_flow et .financials :
-            * **Total Revenue (float)** : Le revenu total généré par une entreprise à partir de ses activités principales au cours d'une période comptable donnée.
-            * **Net Income (float)** : Le bénéfice net réalisé par une entreprise après déduction de toutes les charges, dépenses, impôts et intérêts.
-            * **EBITDA (float)** : Un indicateur financier mesurant les bénéfices d'une entreprise avant intérêts, impôts, dépréciation et amortissement.
-            * **Basic EPS (float)** : Le bénéfice par action de base, représentant le montant du bénéfice net attribuable à chaque action ordinaire.
-            * **Operating Cash Flow (float)** : La mesure du flux de trésorerie généré par les activités opérationnelles d'une entreprise.
-            * **Free Cash Flow (float)** : La mesure du flux de trésorerie disponible après les dépenses en capital et les investissements nécessaires.
-            * **Total Assets (float)** : La somme de tous les actifs détenus par une entreprise, y compris les actifs courants et non courants.
-            * **Long Term Debt (float)** : La dette financière à long terme d'une entreprise, généralement contractée pour une durée supérieure à un an.
-            * **Total Liabilities Net Minority Interest (float)** : Le total des passifs d'une entreprise, y compris la dette et les autres obligations.
-            * **Stockholders Equity (float)** : La valeur nette des capitaux propres d'une entreprise après le remboursement de toutes les dettes.
-             """)
+            * **Total Revenue (float)** : Chiffre d'affaires total généré par une entreprise à partir de ses activités principales.  
+            * **Net Income (float)** : Bénéfice net après déduction de toutes les charges, dépenses, impôts et intérêts.  
+            * **EBITDA (float)** : Bénéfices avant intérêts, impôts, dépréciation et amortissement, indiquant la rentabilité opérationnelle.
+            * **Basic EPS (float)** :Bénéfice par action.  
+            * **Operating Cash Flow (float)** : Flux de trésorerie généré par les activités opérationnelles.  
+            * **Free Cash Flow (float)** : Flux de trésorerie disponible après les dépenses en capital et les investissements nécessaires.
+            * **Total Assets (float)** : Somme de tous les actifs détenus par une entreprise.
+            * **Long Term Debt (float)** : Dette financière à long terme.
+            * **Total Liabilities Net Minority Interest (float)** : Total des passifs, y compris la dette et autres obligations.
+            * **Stockholders Equity (float)** : Valeur nette des capitaux propres après remboursement de toutes les dettes.
+             """)                
 
     st.subheader('Données boursières')
     st.write("""
@@ -388,6 +388,9 @@ if page == pages[2]:
     st.write('La variable choisie est ', choix_info, '.')
 
     if choix_info == 'country':
+
+        st.write("#### Pays :")
+        
         df_country = stock_info['country'].value_counts().reset_index()
         df_country.columns = ['Pays', 'Actions']
         plt.figure(figsize=(10,6))
@@ -406,6 +409,9 @@ if page == pages[2]:
         st.write("Nombre de modalités : ", df_country['Pays'].nunique())
         
     if choix_info == 'exchange':
+
+        st.write("#### Place de cotation :")
+
         df_exchange = stock_info['exchange'].map(dico_exchange).value_counts().reset_index()
         df_exchange.columns = ['Place de cotation', 'Actions']
 
@@ -425,8 +431,10 @@ if page == pages[2]:
                    """)
 
     if choix_info == 'industry et sector':
-        
+    
         # Secteur économique
+        st.write("#### Secteur énonomique :")
+
         df_sector = stock_info['sector'].value_counts().reset_index()
         df_sector.columns = ['Secteur économique', 'Actions']
         plt.figure(figsize=(10,6))
@@ -446,6 +454,8 @@ if page == pages[2]:
         st.write("Nombre de modalités : ", df_sector['Secteur économique'].nunique())
         
         #  Catégorie industrielle
+        st.write("#### Catégorie industrielle :")
+            
         df_industry = stock_info['industry'].value_counts().reset_index()
         df_industry.columns = ['Catégorie industrielle', 'Actions']
         plt.figure(figsize=(10,6))
@@ -461,7 +471,7 @@ if page == pages[2]:
         st.write("Nombre de modalités : ", df_industry['Catégorie industrielle'].nunique())
 
         # Catégorie new_industry
-        st.subheader("Création d'une nouvelle variable 'new_industry'")
+        st.write("#### Création d'une nouvelle variable 'new_industry'")
         st.write("""
                 La catégorie industrielle est une subdivision des secteurs économiques.
                 Les deux variables sont corrélées.
@@ -484,6 +494,8 @@ if page == pages[2]:
         st.write("Nombre de modalités : ", df_new_industry['New Industry'].nunique())
 
     if choix_info == 'longBusinessSummary':
+        st.write("#### Activité de l'entreprise :")
+        
         st.write("La variable longBusinessSummary décrivant l'activité de la société contient de nombreuses informations.")
 
         st.text("Exemples de description :")
@@ -517,7 +529,6 @@ if page == pages[2]:
                     * Meilleur compromis d'après le score de silhouette et le score de Calinski-Harabasz (elbow method) : 10 clusters
                 """)
 
-        #  Catégorie industrielle
         df_business = stock_data.copy()
         df_business = df_business[~df_business.index.duplicated(keep='first')]
         df_business = df_business.rename(columns={'businessClass': 'Business Class'})
@@ -559,6 +570,9 @@ if page == pages[2]:
                 )
 
     if choix_info == 'fullTimeEmployees':
+
+        st.write("#### Nombre d'employés :")
+
         df_employees = stock_info[['longName','fullTimeEmployees','fte_category']].copy().sort_values(by='fullTimeEmployees', ascending=False).drop_duplicates(keep='first')
 
         col1, col2 = st.columns(2)
@@ -626,6 +640,9 @@ if page == pages[2]:
         st.write("Nombre de modalités : ", stock_data['fte_category'].nunique())
 
     if choix_info == 'marketCap':
+
+        st.write("#### Capitalisation boursière :")
+
         st.write("""
                 Les capitalisations boursières sont exprimées dans des **devises différentes**.  
                 Une **conversion en Euro** de toutes les devises a été effectuée lors d'une phase de pré-traitement. 
@@ -700,8 +717,9 @@ if page == pages[2]:
         st.write("Nombre de modalités : ", stock_data['cap_category'].nunique())
 
     def display_feature(feature):
+        
         st.write("""
-                Les capitalisations boursières sont exprimées dans des **devises différentes**.  
+                Les données financières sont exprimées dans des **devises différentes**.  
                 Une **conversion en Euro** de toutes les devises a été effectuée lors d'une phase de pré-traitement. 
                 """)
         
@@ -800,38 +818,50 @@ if page == pages[2]:
                     """)
 
     if choix_info == 'Total Revenue':
+        st.write("#### Chiffre d'affaire :")
         display_feature(choix_info)
 
     if choix_info == 'Net Income':
+        st.write("#### Bénéfice net :")
         display_feature(choix_info)
 
     if choix_info == 'EBITDA':
+        st.write("#### Bénéfices :")
         display_feature(choix_info)
 
     if choix_info == 'Basic EPS':
+        st.write("#### Bénéfice par action :")
         display_feature(choix_info)
 
     if choix_info == 'Operating Cash Flow':
+        st.write("#### Flux de trésorerie des activités opérationnelles :")
         display_feature(choix_info)
 
     if choix_info == 'Free Cash Flow':
+        st.write("#### Flux de trésorerie disponible :")
         display_feature(choix_info)
 
     if choix_info == 'Total Assets':
+        st.write("#### Somme des actifs :")
         display_feature(choix_info)
 
     if choix_info == 'Long Term Debt':
+        st.write("#### Dette financière à long terme :")
         display_feature(choix_info)
 
     if choix_info == 'Total Liabilities Net Minority Interest':
+        st.write("#### Total des passifs :")
         display_feature(choix_info)
 
     if choix_info == 'Stockholders Equity':
+        st.write("#### Valeur nette des capitaux propres après remboursement des dettes :")
         display_feature(choix_info)
 
     if choix_info == 'Return':
         df_return = stock_data[~(stock_data['year'] == 2024)].copy()
         
+        st.write("#### Return de l'année N :")
+
         describe = []
         for year in sorted(df_return['year'].unique()):
             stats = df_return.loc[df_return['year'] == year, ['Return_n']].describe()
@@ -852,15 +882,15 @@ if page == pages[2]:
         ax.set_title("Variation des cours boursiers par année")
         st.pyplot(fig, use_container_width=True)
 
-        st.write("""Les marchés financiers sont sensibles à des facteurs exogènes comme des évènements géopolitiques ou économiques.  
-                 Pour limiter l'impact de ces facteurs exogènes, les variations sont recalées pour avoir une moyenne nulle. 
-                 Les années deviennent comparables en moyenne. 
+        st.write("""Les marchés financiers sont influencés par des facteurs externes tels que des événements géopolitiques ou économiques. 
+                Pour réduire l’impact de ces facteurs, **les variations sont ajustées par rapport à leur moyenne annuelle** afin d'obtenir une moyenne nulle. 
+                 Cela permet de rendre les années comparables en termes de moyenne. 
                  """)
         
         st.markdown(r"""
                     Les marchés ont été très volatils en 2021 et 2022. 
                     Les performances les plus extrêmes, qu'elles soient à la hausse ou à la baisse, peuvent être considérées comme des valeurs aberrantes. 
-                    Ces performances extrêmes sont plafonnées à 1,5 fois l'intervalle interquartile :    
+                    Les outliers sont plafonnées à 1,5 fois l'intervalle interquartile :    
                     $$1.5 \times IQR \, (Q3 - Q1)$$.
                     """)
         
@@ -875,57 +905,70 @@ if page == pages[2]:
         ax_2.set_yticks(np.arange(-1.5, 5.5, 0.5))
         ax_2.set_xlabel("Année")
         ax_2.set_ylabel("Variation des cours par rapport à l'année précédente (%)")
-        ax_2.set_title("Après pré-traitement : Variation des cours boursiers par année")
+        ax_2.set_title("Variation des cours boursiers par année (après pré-traitement)")
         st.pyplot(fig_2, use_container_width=True)
 
+        st.write("#### Return de l'année N + 1 :")
+
+        st.write("La variation de cours de l'année suivant est la variable cible à prédire.")
+
+        df_return = stock_data[~(stock_data['year'].isin([2023, 2024]))].copy()
+        df_return = df_return.dropna(subset=['Return_n+1'])
+
+        describe = []
+        for year in sorted(df_return['year'].unique()):
+            stats = df_return.loc[df_return['year'] == year, ['Return_n+1']].describe()
+            stats = stats.rename(columns={'Return_n+1': f'Return_n+1 {year}'})
+            describe.append(stats)
+
+        result = pd.concat(describe, axis=1)
+
+        st.dataframe(result, use_container_width=True)
+
+        fig_3, ax_3 = plt.subplots()    
+        palette = sns.color_palette("hls", len(df_return['year'].unique()))
+        sns.boxplot(data=df_return, x='year', y='Return_n+1', hue='year', palette=palette, showmeans=True, ax=ax_3)
+        ax_3.set_ylim([-1.5, 5])
+        ax_3.set_yticks(np.arange(-1.5, 5.5, 0.5))
+        ax_3.set_xlabel("Année")
+        ax_3.set_ylabel("Variation du cours (%)")
+        ax_3.set_title("Variable cible : Variation des cours dans l'année")
+        st.pyplot(fig_3, use_container_width=True)
+
+        st.write("""
+                 Les variations de cours au cours de l’année sont ajustées en fonction des moyennes calculées pour la 
+                 variable 'Return_N'.  
+                 Par exemple, la variable 'Return_N+1' pour l'année 2021 est ajustée en utilisant la moyenne de l'année 
+                 2022 pour la variable 'Return_N'.
+                 """)
+        
+        st.write("Les outliers sont traités comme pour la variable 'Return_N'.")
+
+        st.write("Après traitement :")
+
+        df_return_2 = reference_finale[~(reference_finale['year'].isin([2023, 2024]))].copy()
+
+        fig_4, ax_4 = plt.subplots()    
+        palette = sns.color_palette("hls", len(df_return['year'].unique()))
+        sns.boxplot(data=df_return_2, x='year', y='Return_n+1', hue='year', palette=palette, showmeans=True, ax=ax_4)
+        ax_4.set_ylim([-1.5, 5])
+        ax_4.set_yticks(np.arange(-1.5, 5.5, 0.5))
+        ax_4.set_xlabel("Année")
+        ax_4.set_ylabel("Variation des cours (%)")
+        ax_4.set_title("Variable cible : Variation des cours dans l'année (après pré-traitement)")
+        st.pyplot(fig_4, use_container_width=True)
 
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        # df_return = reference_finale[~(reference_finale['year'] == 2024)].copy()
-
-        # fig_2, ax_2 = plt.subplots()    
-        # palette = sns.color_palette("hls", len(df_return['year'].unique()))
-        # sns.boxplot(data=df_return, x='year', y='Return_n', hue='year', palette=palette, showmeans=True, ax=ax_2)
-        # ax_2.set_ylim([-1.5, 5])
-        # ax_2.set_yticks(np.arange(-1.5, 5.5, 0.5))
-        # ax_2.set_xlabel("Année")
-        # ax_2.set_ylabel("Variation des cours par rapport à l'année précédente (%)")
-        # ax_2.set_title("Variation des cours boursiers par année")
-        # st.pyplot(fig_2, use_container_width=True)
 
         
 
 
     disclaimer_display()
 
-# Return_n
+# Return_n+1
 
 # Machine Learning
 if page == pages[3]:
@@ -935,13 +978,12 @@ if page == pages[3]:
 
 # Choix de la métrique Accuracy
 
-# Choix des modèles Lazy predict
-
+# Choix des modèles Lazy predic
 # Optimisation des hyper-paramètres
 
 # Matrice de confusion et ROC_AUC
 
-# Courbe de convergence
+# Courbe de convergence et taux de confiance
 
     disclaimer_display()
 
