@@ -78,7 +78,7 @@ def selection_model(selected_model):
 @st.cache_resource
 def import_stock_data(ticker):
     try:
-        yf_instance = yf.download(ticker, start='2023-01-01', end='2024-09-07')
+        yf_instance = yf.download(ticker, start='2023-01-01', end='2024-12-31')
     except Exception as e:
         st.error(f"Erreur lors du téléchargement des données : {e}")
         return None
@@ -958,21 +958,13 @@ if page == pages[2]:
         ax_4.set_title("Variable cible : Variation des cours dans l'année (après pré-traitement)")
         st.pyplot(fig_4, use_container_width=True)
 
-
-
-
-
-
-        
-
-
     disclaimer_display()
-
-# Return_n+1
 
 # Machine Learning
 if page == pages[3]:
     st.header("Machine Learning")
+
+
 
 # Affichage du dataframe avec encodage et standardisation
 
