@@ -1123,7 +1123,7 @@ if page == pages[3]:
             st.write("#### Choix de la métrique")
 
             st.write("""
-                     La métrique retenue est la **précision** (accuracy).  
+                     La métrique retenue est la **précision** (Accuracy).  
                      L'objectif est de cibler avec exactitude les cas positifs (précision) et non d'identifier un maximum de cas positifs (rappel).
                      """)
             
@@ -1222,7 +1222,7 @@ if page == pages[3]:
                 except:
                     pass
 
-            accuracy = [tp / (tp + fp) if (tp + fp) != 0 else 0 for tp, fp in zip(true_positive, false_positive)]
+            precision = [tp / (tp + fp) if (tp + fp) != 0 else 0 for tp, fp in zip(true_positive, false_positive)]
 
             fig_5, ax_5 = plt.figure(figsize=(8, 6)), plt.gca()
 
@@ -1236,9 +1236,9 @@ if page == pages[3]:
             ax_5.set_yticks(range(0, max(true_positive + false_positive) + 25, 25))
             ax_5.set_xticks([i * 0.05 for i in range(int(min(thresholds) / 0.05), int(max(thresholds) / 0.05) + 1)])
 
-            # Création d'un second axe y pour l'accuracy
+            # Création d'un second axe y pour la precision
             ax_6 = ax_5.twinx()
-            line3, = ax_6.plot(thresholds[:len(accuracy)], accuracy, label="Accuracy", color='g')
+            line3, = ax_6.plot(thresholds[:len(precision)], precision, label="Precision", color='g')
             ax_6.set_ylabel("Précision", color='g')
             ax_6.tick_params(axis='y', labelcolor='g')
             ax_6.annotate('seuil = 0,825\nprécision = 0,98',
@@ -1453,8 +1453,8 @@ if page == pages[3]:
                 except:
                     pass
 
-            # Calcul de l'accuracy
-            accuracy = [tp / (tp + fp) if (tp + fp) != 0 else 0 for tp, fp in zip(nb_tp, nb_fp)]
+            # Calcul de la précision
+            precision = [tp / (tp + fp) if (tp + fp) != 0 else 0 for tp, fp in zip(nb_tp, nb_fp)]
 
             fig_5, ax_5 = plt.figure(figsize=(8, 6)), plt.gca()
 
@@ -1468,9 +1468,9 @@ if page == pages[3]:
             ax_5.set_yticks(range(0, 725, 25))
             ax_5.set_xticks([i * 0.05 for i in range(int(0.40 / 0.05) + 1)])
 
-            # Création d'un second axe y pour l'accuracy
+            # Création d'un second axe y pour la précision
             ax_6 = ax_5.twinx()
-            line3, = ax_6.plot(resultat_sorted['classification'], accuracy, label="Accuracy", color='g')
+            line3, = ax_6.plot(resultat_sorted['classification'], precision, label="Precision", color='g')
             ax_6.set_ylabel("Précision", color='g')
             ax_6.tick_params(axis='y', labelcolor='g')
             ax_6.annotate('seuil = 0,29\nprécision = 0,97',
