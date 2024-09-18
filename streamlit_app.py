@@ -1265,7 +1265,7 @@ if page == pages[3]:
             st.pyplot(fig_5, use_container_width=True)
             plt.close(fig_5)
 
-            st.write("#### Interprétabilité")
+            st.write("#### Interprétabilité SHAP")
             st.image(inter_shap_rfc_file, use_column_width=True)
 
         if modelisation == "Régression":
@@ -1411,7 +1411,7 @@ if page == pages[3]:
             st.write("MAE : ", mean_absolute_error(y_test, y_pred))
             st.write("RMSE : ", np.sqrt(mean_squared_error(y_test, y_pred)))
 
-            st.write("#### Interprétabilité")
+            st.write("#### Interprétabilité SHAP")
             st.image(inter_shap_rfr_file, use_column_width=True)
 
             st.write("#### Prédictions en fonction du seuil de Return_n+1")
