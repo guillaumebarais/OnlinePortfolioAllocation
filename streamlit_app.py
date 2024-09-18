@@ -291,7 +291,7 @@ if page == pages[1]:
                 * [Site ABC Bourse](https://www.abcbourse.com/download/libelles) qui publie des données de plusieurs marchés européens comme les marchés allemand, belge, espagnol, hollandais, italien et portugais.  
                 """)
 
-    st.write("5132 sociétés sont initialement identifiées par leur ISIN (Intenational Securities Identification Number).")
+    st.write("**5132 sociétés identifiées par leur ISIN (Intenational Securities Identification Number)**.")
     
     st.subheader('Collecte des données')
 
