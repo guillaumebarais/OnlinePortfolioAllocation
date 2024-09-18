@@ -266,7 +266,7 @@ if page == pages[0]:
                 * **Périmètre** : Actions européennes éligibles au PEA.
                 * **Objectif** : Créer plusieurs stratégies d'allocation personnalisable pour battre les principaux indices européens sur l'année 2024.
                 * **Méthodologie** :
-                    * Utilisation des donnnées générales, des données financières, des données comptables et des données boursières
+                    * Utilisation des donnnées générales, des données financières, des données comptables et des données boursières des entreprises,
                     * Analyse des données, data visualisation et pré-processing.
                     * Entraînement de modèles de machine learning de classification et de régression.
                     * Interprétabilité des résultats.
