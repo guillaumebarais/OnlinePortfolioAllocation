@@ -256,7 +256,7 @@ if page == pages[0]:
     st.markdown("""
                 Quelques points clés :
                 * **Objectif** : Maximiser les rendements tout en minimisant les risques en répartissant les investissements de manière optimale entre différentes actions.
-                * **Données** : Utilisation de données financières historiques et en temps réel pour prendre des décisions d'investissement informées.
+                * **Données** : Utilisation des données en temps réel pour prendre des décisions d'investissement informées.
                 * **Algorithmes** : Implémentation d'algorithmes de Machine Learning pour prévoir les rendements et les probabilités.
                 * **Personnalisation** : Adaptation des stratégies d'investissement aux préférences et aux objectifs spécifiques de chaque investisseur.
                 * **Automatisation** : Automatisation des décisions d'achat et de vente pour réagir rapidement aux changements du marché.
@@ -264,9 +264,9 @@ if page == pages[0]:
     st.subheader('Cadrage du projet')
     st.markdown("""
                 * **Périmètre** : Actions européennes éligibles au PEA.
-                * **Objectif** : Créer plusieurs stratégies d'allocation personnalisable pour battre les principaux indices européens esur l'année 2024.
+                * **Objectif** : Créer plusieurs stratégies d'allocation personnalisable pour battre les principaux indices européens sur l'année 2024.
                 * **Méthodologie** :
-                    * Utilisation des donnnées de profil de l'entreprise, des données financières, des données comptables et des données boursières
+                    * Utilisation des donnnées générales, des données financières, des données comptables et des données boursières
                     * Analyse des données, data visualisation et pré-processing.
                     * Entraînement de modèles de machine learning de classification et de régression.
                     * Interprétabilité des résultats.
