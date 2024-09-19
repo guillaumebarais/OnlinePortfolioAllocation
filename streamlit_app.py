@@ -1123,8 +1123,10 @@ if page == pages[3]:
             st.write("#### Choix de la métrique")
 
             st.write("""
-                     La métrique retenue est la **précision** (Accuracy).  
-                     L'objectif est de cibler avec exactitude les cas positifs (précision) et non d'identifier un maximum de cas positifs (rappel).
+                     La métrique utilisée pour le choix et l'optimisation du modèle est l'**Accuracy**.
+
+                     La **Precision** est la deuxième métrique importante, l'objectif est de cibler avec exactitude les cas positifs (Precision) 
+                     plutôt que d'identifier un maximum de cas positifs (Recall).
                      """)
             
             st.write("#### Choix du modèle")
