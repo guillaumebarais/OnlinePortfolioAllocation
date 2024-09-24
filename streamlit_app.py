@@ -264,9 +264,9 @@ if page == pages[0]:
     st.subheader('Cadrage du projet')
     st.markdown("""
                 * **Périmètre** : Actions européennes éligibles au PEA.
-                * **Objectif** : Créer plusieurs stratégies d'allocation personnalisable pour battre les principaux indices européens sur l'année 2024.
+                * **Objectif** : Créer plusieurs stratégies d'allocation personnalisables pour battre les principaux indices européens sur l'année 2024.
                 * **Méthodologie** :
-                    * Utilisation des donnnées générales, des données financières, des données comptables et des données boursières des entreprises,
+                    * Collecte et utilisation de donnnées générales, financières, comptables et boursières d'entreprises,
                     * Analyse des données, data visualisation et pré-processing.
                     * Entraînement de modèles de machine learning de classification et de régression.
                     * Interprétabilité des résultats.
